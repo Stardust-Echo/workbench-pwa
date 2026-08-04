@@ -16,13 +16,15 @@
     --btn:var(--green); --btn-d:var(--green-d);
     --gold:#E7B65A; --blue:#8FB6DD; --shadow:0 6px 20px rgba(120,95,60,.10);
     --radius:18px;
+    --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
   body{
-    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    font-family:var(--font);
     background:var(--bg); color:var(--ink); overflow:hidden;
   }
+  input,textarea,select,button{font-family:var(--font)}
   .app{display:flex; height:100vh; height:100dvh}
 
   /* ---------- 侧栏（桌面） ---------- */
@@ -175,6 +177,11 @@
   .set-sec:first-of-type{border-top:none;padding-top:4px;margin-top:6px}
   .set-t{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:12px}
   .set-hint{font-size:12px;color:var(--muted);margin:10px 0 4px;line-height:1.6}
+  .font-chip{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--line);border-radius:13px;background:var(--card);cursor:pointer;transition:.15s;position:relative}
+  .font-chip.on{border-color:var(--green);background:color-mix(in srgb, var(--green) 10%, var(--card))}
+  .font-chip .fc-name{flex:0 0 84px;font-size:14px;font-weight:600;color:var(--ink)}
+  .font-chip .fc-sample{flex:1;font-size:14px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .font-chip .fc-check{color:var(--green);font-weight:700;font-size:15px;font-family:inherit}
   .pin-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
   .pin-chip{display:inline-flex;align-items:center;gap:6px;background:#FBF7EF;border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:13px;color:var(--ink)}
   .pin-dot{width:10px;height:10px;border-radius:50%}
@@ -671,6 +678,21 @@ function setBg(c){ document.documentElement.style.setProperty("--bg", c); localS
 const WB_CARD = "qingchen-wb-card";
 function loadCard(){ return localStorage.getItem(WB_CARD)||""; }
 function setCard(c){ document.documentElement.style.setProperty("--card", c); localStorage.setItem(WB_CARD, c); if(current==="settings") render(); }
+
+// 字体（字族）自定义：调用系统已安装字体，跨平台自适应
+const FONTS = [
+  {key:"default",   name:"默认",       stack:'-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif'},
+  {key:"yahei",     name:"微软雅黑",   stack:'"Microsoft YaHei","微软雅黑",sans-serif'},
+  {key:"pingfang",  name:"苹方·黑体", stack:'"PingFang SC","Hiragino Sans GB","Heiti SC",sans-serif'},
+  {key:"song",      name:"宋体·衬线", stack:'"Songti SC","SimSun","宋体",serif'},
+  {key:"kai",       name:"楷体",       stack:'"Kaiti SC","KaiTi","楷体",serif'},
+  {key:"yuan",      name:"圆体",       stack:'"Yuanti SC","圆体-简",sans-serif'},
+  {key:"mono",      name:"等宽",       stack:'"SF Mono",Consolas,Menlo,monospace'},
+];
+const FONT_KEY = "qingchen-wb-font";
+function loadFont(){ return localStorage.getItem(FONT_KEY)||""; }
+function applyFont(stack){ document.documentElement.style.setProperty("--font", stack||FONTS[0].stack); }
+function setFont(key){ const f=FONTS.find(x=>x.key===key); if(!f) return; applyFont(f.stack); localStorage.setItem(FONT_KEY, key); if(current==="settings") render(); }
 
 // 首页问候文案
 const GREET_KEY = "qingchen-wb-greet";
@@ -1711,6 +1733,7 @@ const VIEWS = {
     const bgSaved = loadBg();
     const cardSaved = loadCard();
     const btnSaved = loadBtn();
+    const fontSaved = loadFont();
     const ct = (curTheme && curTheme.v) || THEMES[0].v;
     const ctG = ct.green||"#8FBF6F"; const ctBg = ct.bg||"#FBF4E9"; const ctGold = ct.gold||"#E7B65A";
     return `
@@ -1790,6 +1813,18 @@ const VIEWS = {
           </label>
         </div>
         <div class="set-hint">便签、卡片、抽屉、弹层、桌面侧栏等所有"面板"的底色都会跟着变（文字色保持不变）。</div>
+      </div>
+
+      <div class="set-sec">
+        <div class="set-t">🔤 字体</div>
+        <div class="set-hint">每款都用自带字形预览，点一下整站字体立刻切换（使用设备已安装字体，无需联网下载）。</div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-top:8px">
+          ${FONTS.map(f=>`<div class="font-chip${fontSaved===f.key?' on':''}" onclick="setFont('${f.key}')" style="font-family:${f.stack}">
+            <span class="fc-name">${f.name}</span>
+            <span class="fc-sample">清晨工作台 · 让每一天更有条理</span>
+            ${fontSaved===f.key?'<span class="fc-check">✓</span>':''}
+          </div>`).join("")}
+        </div>
       </div>
 
       <div class="set-sec">
@@ -2077,6 +2112,7 @@ async function pullCloud(manual){
   const savedBg = loadBg(); if(savedBg){ document.documentElement.style.setProperty("--bg", savedBg); const mc=document.querySelector('meta[name=theme-color]'); if(mc) mc.setAttribute("content", savedBg); }
   const savedCard = loadCard(); if(savedCard) document.documentElement.style.setProperty("--card", savedCard);
   const savedBtn = loadBtn(); if(savedBtn){ document.documentElement.style.setProperty("--btn", savedBtn); document.documentElement.style.setProperty("--btn-d", darken(savedBtn,.12)); }
+  const savedFont = loadFont(); if(savedFont){ const f=FONTS.find(x=>x.key===savedFont); if(f) applyFont(f.stack); }
   buildNav(); syncHabitTasks(); render(); renderAccount(); initSb();
   if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
   // 每 60 秒检测跨天：次日自动清掉旧习惯任务、刷新今日清单
