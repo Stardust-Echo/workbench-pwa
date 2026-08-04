@@ -214,11 +214,16 @@
   .sheet-mask.on .sheet{transform:translateY(0)}
   .sheet-grab{width:38px; height:4px; border-radius:3px; background:var(--line); margin:6px auto 10px}
   .sheet-title{font-size:12px; color:var(--muted); padding:0 14px 4px; font-weight:600; letter-spacing:.5px}
-  .sheet-row{display:flex; align-items:center; gap:14px; padding:15px 16px; border-radius:14px; font-size:16px; cursor:pointer}
+  .sheet-row{display:flex; align-items:center; gap:14px; padding:10px 14px; border-radius:14px; font-size:16px; cursor:pointer; color:var(--ink)}
   .sheet-row:active{background:#FBF7EF}
-  .sheet-row .ic{font-size:22px; width:26px; text-align:center}
-  .sheet-row.active{color:var(--green-d); font-weight:600}
-  .sheet-row.divider{border-top:1px solid var(--line); margin-top:6px}
+  .sheet-badge{width:42px; height:42px; border-radius:13px; display:grid; place-items:center; font-size:21px; flex:0 0 auto; box-shadow:0 2px 7px rgba(90,70,40,.12)}
+  .sheet-name{flex:1; font-weight:500; line-height:1.2}
+  .sheet-check{margin-left:auto; color:var(--green); font-weight:700; font-size:17px}
+  .sheet-row.active{background:rgba(143,191,111,.13)}
+  .sheet-row.active .sheet-name{color:var(--green-d); font-weight:600}
+  .sheet-row.divider{border-top:1px solid var(--line); margin-top:6px; padding-top:14px}
+  .more-ic{display:grid; grid-template-columns:repeat(2,4px); grid-template-rows:repeat(2,4px); gap:3px; width:20px; height:20px}
+  .more-ic i{background:currentColor; border-radius:1.5px}
 
   /* 自定义底部栏 */
   .tab-edit-row{display:flex; align-items:center; gap:12px; padding:13px 14px; border-radius:12px; cursor:pointer; user-select:none}
@@ -360,7 +365,7 @@ function buildNav(){
   const moreOn = !orderSet.has(current);
   $("#tabbar").innerHTML =
     order.map(id=>{ const m=MODULES.find(x=>x.id===id); return m?`<div class="tab ${id===current?'on':''}" data-m="${id}"><span class="ic">${m.ic}</span>${m.name}</div>`:""; }).join("")
-    + `<div class="tab ${moreOn?'on':''}" data-m="__more"><span class="ic">☰</span>更多</div>`;
+    + `<div class="tab ${moreOn?'on':''}" data-m="__more"><span class="more-ic"><i></i><i></i><i></i><i></i></span>更多</div>`;
   document.querySelectorAll(".nav-item").forEach(el=>el.onclick=()=>{current=el.dataset.m;buildNav();render();});
   document.querySelectorAll(".tab").forEach(el=>el.onclick=()=>{
     if(el.dataset.m==="__more"){ openSheet(); return; }
@@ -372,9 +377,9 @@ function renderSheet(){
   const rest = MODULES.filter(m=>!order.includes(m.id));
   $("#sheetList").innerHTML =
     (rest.length
-      ? rest.map(m=>`<div class="sheet-row ${m.id===current?'active':''}" onclick="selectModule('${m.id}')"><span class="ic">${m.ic}</span>${m.name}</div>`).join("")
+      ? rest.map(m=>`<div class="sheet-row ${m.id===current?'active':''}" onclick="selectModule('${m.id}')"><span class="sheet-badge" style="background:${m.color}">${m.ic}</span><span class="sheet-name">${m.name}</span>${m.id===current?'<span class="sheet-check">✓</span>':''}</div>`).join("")
       : '<div class="sheet-row" style="color:var(--muted);cursor:default;font-size:13px;padding:12px 16px">已全部固定到底部栏</div>')
-    + `<div class="sheet-row divider" onclick="closeSheet();openEdit()" style="color:var(--green-d);font-weight:600"><span class="ic">✏️</span>自定义底部栏</div>`;
+    + `<div class="sheet-row divider" onclick="closeSheet();openEdit()" style="color:var(--green-d);font-weight:600"><span class="sheet-badge" style="background:rgba(143,191,111,.18)">✏️</span><span class="sheet-name">自定义底部栏</span></div>`;
 }
 function openSheet(){ renderSheet(); $("#sheetMask").classList.add("on"); }
 function closeSheet(){ $("#sheetMask").classList.remove("on"); }
