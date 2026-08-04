@@ -391,6 +391,18 @@
   .famous-box .fb-q{font-size:16px; line-height:1.7; font-weight:500; color:var(--ink)}
   .famous-box .fb-a{font-size:13px; color:var(--muted); margin-top:8px}
   .famous-box .btn.ghost{margin-top:12px}
+
+  /* ---------- 图片附件 ---------- */
+  .img-bar{display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap}
+  .img-btn{display:inline-flex; align-items:center; gap:4px; font-size:13px; padding:6px 12px;
+    border:1px dashed var(--line); border-radius:10px; color:var(--muted); cursor:pointer; background:transparent}
+  .img-btn:hover{border-color:var(--green); color:var(--green-d)}
+  .img-prev{position:relative; width:62px; height:62px; border-radius:10px; overflow:hidden; border:1px solid var(--line)}
+  .img-prev img{width:100%; height:100%; object-fit:cover; display:block}
+  .img-prev .x{position:absolute; top:2px; right:2px; width:18px; height:18px; line-height:18px; text-align:center;
+    background:rgba(0,0,0,.55); color:#fff; border-radius:50%; font-size:12px; cursor:pointer}
+  .entry-img{margin-top:8px; border-radius:10px; overflow:hidden; border:1px solid var(--line)}
+  .entry-img img{width:100%; max-height:260px; object-fit:cover; display:block}
 </style>
 </head>
 <body>
@@ -437,7 +449,7 @@ const MODULES = [
   {id:"habit",   name:"习惯打卡", ic:"✅", color:"#E7B65A"},
   {id:"mood",    name:"心情记录", ic:"🌈", color:"#F4A6A6"},
   {id:"idea",    name:"奇思妙想", ic:"💭", color:"#E7C24B"},
-  {id:"read",    name:"音乐歌词精选", ic:"🎵", color:"#8FB6DD"},
+  {id:"read",    name:"音乐推荐", ic:"🎵", color:"#8FB6DD"},
   {id:"fit",     name:"健康管理", ic:"💪", color:"#C9A0DC"},
   {id:"study",   name:"学习管理", ic:"🎓", color:"#7FB3A3"},
   {id:"project", name:"项目管理", ic:"📁", color:"#E0936B"},
@@ -602,7 +614,7 @@ function getUserName(){ return (localStorage.getItem(USER_KEY)||"").trim(); }
 function userName(){
   const n=getUserName(); if(n) return n;
   const cfg=getCfg(); if(cfg && cfg.name){ const c=String(cfg.name).replace(/[^\u4e00-\u9fff\w]/g,'').trim(); if(c) return c; }
-  return "阿莹";
+  return "小朋友";
 }
 function saveUserName(){
   const el=document.getElementById("user-name");
@@ -1000,6 +1012,10 @@ const VIEWS = {
         ${opts.map(o=>`<div class="mood ${last&&last.emoji===o[0]?'on':''}" onclick="logMood('${o[0]}','${o[1]}')">${o[0]}</div>`).join("")}
       </div>
       <div class="add"><input id="m-note" placeholder="今天发生了什么？（可选）"/><button class="btn" onclick="saveMoodNote()">记一笔</button></div>
+      <div class="img-bar">
+        <label class="img-btn">📷 图片<input type="file" accept="image/*" hidden onchange="onMoodImg(this)"/></label>
+        ${moodImg?`<div class="img-prev"><img src="${moodImg}"/><span class="x" onclick="clearMoodImg()">✕</span></div>`:''}
+      </div>
       <div style="margin-top:10px">
         ${state.mood.length?state.mood.slice().reverse().map(x=>{
           const ts=x.ts||Date.now();
@@ -1010,6 +1026,7 @@ const VIEWS = {
                 <div class="diary-sub">${x.note?esc(x.note):'记录此刻的心情'}</div></div>
               <div class="diary-time">${fmtDate(ts)}</div>
             </div>
+            ${x.img?`<div class="entry-img"><img src="${x.img}"/></div>`:''}
             <div class="diary-foot"><span class="clk">🕒 ${fmtTime(ts)}</span><span class="x" onclick="delMood('${x.id||''}',${state.mood.indexOf(x)})">删除</span></div>
           </div>`;
         }).join(""):'<div class="empty">今天还没记录心情</div>'}
@@ -1019,13 +1036,13 @@ const VIEWS = {
 
   read:()=>`
     <div class="card">
-      <h2>🎵 音乐歌词精选 <span class="tag">收藏喜欢的好词好句</span></h2>
+      <h2>🎵 音乐推荐 <span class="tag">收藏 / 推荐喜欢的音乐</span></h2>
       <div class="add">
         <input id="ly-title" placeholder="歌名 / 曲名" />
         <input id="ly-singer" placeholder="歌手（选填）" />
       </div>
       <div class="add" style="margin-top:8px">
-        <input id="ly-lyric" placeholder="喜欢的歌词片段…" style="flex:1" />
+        <input id="ly-lyric" placeholder="推荐理由 / 喜欢的歌词片段…" style="flex:1" />
         <button class="btn" onclick="addLyric()">收藏</button>
       </div>
       ${state.read.length?state.read.slice().reverse().map((s,i)=>{
@@ -1035,7 +1052,7 @@ const VIEWS = {
           <div class="del" onclick="delLyric(${idx})">删除</div></div>
           <div class="lc-body">${esc(s.lyric||"")}</div>
         </div>`;
-      }).join(""):'<div class="empty">还没有收藏的歌词，遇到喜欢的句子就存下来吧</div>'}
+      }).join(""):'<div class="empty">还没有收藏的音乐，遇到喜欢的歌就存下来吧</div>'}
     </div>`,
 
   fit:()=>{
@@ -1133,17 +1150,29 @@ const VIEWS = {
   project:()=>`
     <div class="card">
       <h2>📁 项目管理</h2>
-      ${state.project.map(p=>`
-        <div class="row"><div class="txt"><b>${esc(p.name)}</b><div class="meta">${esc(p.note)}</div></div>
+      <div class="add">
+        <input id="p-name" placeholder="项目名" />
+        <input id="p-note" placeholder="备注（选填）" />
+        <button class="btn" onclick="addProj()">添加</button>
+      </div>
+      ${state.project.length?state.project.map((p,i)=>`
+        <div class="row">
+          <div class="txt"><b>${esc(p.name)}</b><div class="meta">${esc(p.note||'')}</div></div>
           <div class="seg"><button class="${p.status==='进行中'?'on':''}" onclick="setProj('${esc(p.name)}','进行中')">进行中</button>
-          <button class="${p.status!=='进行中'?'on':''}" onclick="setProj('${esc(p.name)}','待启动')">待启动</button></div></div>`).join("")}
+          <button class="${p.status!=='进行中'?'on':''}" onclick="setProj('${esc(p.name)}','待启动')">待启动</button></div>
+          <div class="del" onclick="delProj(${i})">删除</div>
+        </div>`).join(""):'<div class="empty">还没有项目，加一个吧</div>'}
     </div>`,
 
   idea:()=>`
     <div class="card">
       <h2>💭 奇思妙想</h2>
       <div class="add"><input id="i-in" placeholder="捕捉一个灵感"/><button class="btn" onclick="addIdea()">添加</button></div>
-      ${state.idea.map((x,i)=>`<div class="row"><span>💭</span><div class="txt">${esc(x)}</div><div class="del" onclick="delIdea(${i})">删除</div></div>`).join("")}
+      <div class="img-bar">
+        <label class="img-btn">📷 图片<input type="file" accept="image/*" hidden onchange="onIdeaImg(this)"/></label>
+        ${ideaImg?`<div class="img-prev"><img src="${ideaImg}"/><span class="x" onclick="clearIdeaImg()">✕</span></div>`:''}
+      </div>
+      ${state.idea.map((x,i)=>{const t=typeof x==='string'?x:x.text; const im=typeof x==='string'?null:x.img; return `<div class="row"><span>💭</span><div class="txt">${esc(t)}${im?`<div class="entry-img"><img src="${im}"/></div>`:''}</div><div class="del" onclick="delIdea(${i})">删除</div></div>`;}).join("")}
     </div>`,
 
   money:()=>{
@@ -1215,6 +1244,10 @@ const VIEWS = {
       <h2>🗒️ 便签墙</h2>
       <div class="add"><input id="n-in" placeholder="写一张便签，回车添加"/><button class="btn" onclick="addNote()">添加</button></div>
       <div class="ic-pick" id="icPick">${NOTE_ICONS.map(i=>`<button class="ic-chip${i===noteSelIc?' on':''}" onclick="pickIc('${i}')">${i}</button>`).join('')}</div>
+      <div class="img-bar">
+        <label class="img-btn">📷 图片<input type="file" accept="image/*" hidden onchange="onNoteImg(this)"/></label>
+        ${noteImg?`<div class="img-prev"><img src="${noteImg}"/><span class="x" onclick="clearNoteImg()">✕</span></div>`:''}
+      </div>
       <div class="notes" style="margin-top:14px">
         ${state.notes.slice().reverse().map(n=>{
           const ts=n.ts||Date.now();
@@ -1226,6 +1259,7 @@ const VIEWS = {
               <div class="diary-time">${fmtDate(ts)}</div>
             </div>
             <div class="diary-body">${esc(n.text)}</div>
+            ${n.img?`<div class="entry-img"><img src="${n.img}"/></div>`:''}
             <div class="diary-foot" style="border-color:rgba(0,0,0,.08)"><span class="clk">🕒 ${fmtTime(ts)}</span><span class="x" onclick="delNote(${n.id})">删除</span></div>
           </div>`;
         }).join("")}
@@ -1237,8 +1271,12 @@ const VIEWS = {
     <div class="card">
       <h2>🌳 树洞 <span class="tag">只对自己说的话</span></h2>
       <div class="add"><input id="w-in" placeholder="说点什么……"/><button class="btn" onclick="addWhisper()">写下</button></div>
+      <div class="img-bar">
+        <label class="img-btn">📷 图片<input type="file" accept="image/*" hidden onchange="onWhisperImg(this)"/></label>
+        ${whisperImg?`<div class="img-prev"><img src="${whisperImg}"/><span class="x" onclick="clearWhisperImg()">✕</span></div>`:''}
+      </div>
       ${state.whisper.map((x,i)=>{
-        const item = typeof x==="string" ? {text:x,ts:Date.now()} : x;
+        const item = typeof x==="string" ? {text:x,ts:Date.now(),img:null} : x;
         return `<div class="diary">
           <div class="diary-head">
             <div class="diary-av">🌿</div>
@@ -1247,6 +1285,7 @@ const VIEWS = {
             <div class="diary-time">${fmtDate(item.ts)}</div>
           </div>
           <div class="diary-body">${esc(item.text)}</div>
+          ${item.img?`<div class="entry-img"><img src="${item.img}"/></div>`:''}
           <div class="diary-foot"><span class="clk">🕒 ${fmtTime(item.ts)}</span><span class="x" onclick="delWhisper(${i})">删除</span></div>
         </div>`;
       }).join("")}
@@ -1264,10 +1303,10 @@ const VIEWS = {
       <div class="set-sec">
         <div class="set-t">🙂 我的称呼</div>
         <div class="add" style="margin:0">
-          <input id="set-name" value="${getUserName()}" placeholder="想被怎么称呼？如：阿莹" oninput="saveUserName()"/>
+          <input id="set-name" value="${getUserName()}" placeholder="想被怎么称呼？如：小朋友" oninput="saveUserName()"/>
           <button class="btn ghost sm" onclick="document.getElementById('set-name').value='';saveUserName()">重置</button>
         </div>
-        <div class="set-hint">首页问候会显示这个称呼，留空则默认显示「阿莹」。</div>
+        <div class="set-hint">首页问候会显示这个称呼，留空则默认显示「小朋友」。</div>
       </div>
 
       <div class="set-sec">
@@ -1314,6 +1353,32 @@ const VIEWS = {
 
 /* ---------------- 交互 ---------------- */
 function uid(){return Date.now()}
+let moodImg=null, ideaImg=null, noteImg=null, whisperImg=null;
+/* 读取并自动压缩图片（最长边 900px，JPEG 0.7），避免 localStorage 爆炸 */
+function readImage(file, cb){
+  if(!file) return;
+  const fr=new FileReader();
+  fr.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height; const max=900;
+      if(w>max||h>max){ const r=max/Math.max(w,h); w=Math.round(w*r); h=Math.round(h*r); }
+      const c=document.createElement("canvas"); c.width=w; c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      cb(c.toDataURL("image/jpeg",0.7));
+    };
+    img.src=e.target.result;
+  };
+  fr.readAsDataURL(file);
+}
+function onMoodImg(inp){ readImage(inp.files[0], d=>{ moodImg=d; render(); }); }
+function clearMoodImg(){ moodImg=null; render(); }
+function onIdeaImg(inp){ readImage(inp.files[0], d=>{ ideaImg=d; render(); }); }
+function clearIdeaImg(){ ideaImg=null; render(); }
+function onNoteImg(inp){ readImage(inp.files[0], d=>{ noteImg=d; render(); }); }
+function clearNoteImg(){ noteImg=null; render(); }
+function onWhisperImg(inp){ readImage(inp.files[0], d=>{ whisperImg=d; render(); }); }
+function clearWhisperImg(){ whisperImg=null; render(); }
 let fitEditIdx = -1;
 function addFit(){
   const type=($("#f-type").value||"").trim();
@@ -1396,9 +1461,9 @@ function delHabit(i){const h=state.habit[i];const id=h&&h.id;
 function toggleHabit(i,j){state.habit[i].week[j]=state.habit[i].week[j]?0:1;save();render()}
 function logMood(e,l){state._lastMood={emoji:e,label:l};save();render()}
 function saveMoodNote(){const note=$("#m-note").value.trim();const last=state._lastMood||{emoji:"🙂",label:"一般"};
-  state.mood.push({id:uid(),emoji:last.emoji,label:last.label,note,ts:Date.now()});save();render();
+  state.mood.push({id:uid(),emoji:last.emoji,label:last.label,note,img:moodImg,ts:Date.now()});moodImg=null;save();render();
   const i=$("#m-note"); if(i) i.value="";}
-function addIdea(){const v=$("#i-in").value.trim();if(!v)return;state.idea.unshift(v);save();render()}
+function addIdea(){const v=$("#i-in").value.trim();if(!v&&!ideaImg)return;state.idea.unshift({text:v,img:ideaImg});ideaImg=null;save();render();const i=$("#i-in");if(i)i.value="";}
 function delIdea(i){state.idea.splice(i,1);save();render()}
 function addMoney(){const type=$("#m-type").value;const amt=+$("#m-amt").value;if(!amt)return;
   const cat=$("#m-cat").value.trim()||(type==="in"?"存入":"支出");
@@ -1413,15 +1478,19 @@ function clearMoneyForm(){ const a=$("#m-amt"); if(a)a.value=""; const c=$("#m-c
 function resetSavings(){ if(!confirm("确定把已存金额清0吗？目标金额会保留。")) return; state.money.saved=0; save(); render(); }
 function setGoal(v){ const n=Math.max(0, Math.round(+v||0)); state.money.goal=n; save(); render(); }
 function setProj(name,st){const p=state.project.find(x=>x.name===name);p.status=st;save();render()}
-function addNote(){const v=$("#n-in").value.trim();if(!v)return;
+function addProj(){const name=$("#p-name").value.trim();if(!name)return;
+  state.project.push({name,note:($("#p-note").value||"").trim(),status:"进行中"});save();render();
+  const a=$("#p-name"); if(a) a.value=""; const b=$("#p-note"); if(b) b.value="";}
+function delProj(i){ if(i<0||i>=state.project.length) return; state.project.splice(i,1); save(); render(); }
+function addNote(){const v=$("#n-in").value.trim();if(!v&&!noteImg)return;
   const cs=["#FFF2B8","#D6E8C8","#FBD3D3","#D3E4FB","#EAD9F2","#FCE4C8"];
-  state.notes.push({id:uid(),color:cs[Math.floor(Math.random()*cs.length)],ic:noteSelIc,text:v,ts:Date.now()});save();render();
+  state.notes.push({id:uid(),color:cs[Math.floor(Math.random()*cs.length)],ic:noteSelIc,text:v,img:noteImg,ts:Date.now()});noteImg=null;save();render();
   const i=$("#n-in"); if(i) i.value="";}
 function pickIc(ic){ noteSelIc=ic; document.querySelectorAll('#icPick .ic-chip').forEach(c=>c.classList.toggle('on', c.textContent===ic)); }
 function delNote(id){state.notes=state.notes.filter(x=>x.id!==id);save();render()}
 function delMood(id,idx){if(id) state.mood=state.mood.filter(x=>x.id!==id); else state.mood.splice(idx,1); save();render()}
-function addWhisper(){const v=$("#w-in").value.trim();if(!v)return;
-  state.whisper.unshift({text:v,ts:Date.now()});save();render();
+function addWhisper(){const v=$("#w-in").value.trim();if(!v&&!whisperImg)return;
+  state.whisper.unshift({text:v,ts:Date.now(),img:whisperImg});whisperImg=null;save();render();
   const i=$("#w-in"); if(i) i.value="";}
 function delWhisper(i){state.whisper.splice(i,1);save();render()}
 
