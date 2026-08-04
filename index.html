@@ -639,9 +639,30 @@ function openCustomTheme(){ const ce=document.getElementById("customTheme"); if(
 function previewCustomTheme(){ const c=document.getElementById("themeColor").value; applyTheme({green:c, greenD:darken(c,.12), gold:mix(c,"#fff6e4",.5), bg:lighten(c,.9)}); }
 function applyCustomTheme(){ const c=document.getElementById("themeColor").value; const v={green:c, greenD:darken(c,.12), gold:mix(c,"#fff6e4",.5), bg:lighten(c,.9)}; curTheme={key:"custom", v}; applyTheme(v); saveThemeObj(curTheme); renderModal(); if(current==="settings") render(); }
 // 设置模块内的自定义主题（独立 id，避免与账户弹窗冲突）
-function setOpenCustom(){ const e=document.getElementById("setCustomTheme"); if(e) e.style.display="flex"; }
-function setPreviewCustom(){ const c=document.getElementById("setThemeColor").value; applyTheme({green:c, greenD:darken(c,.12), gold:mix(c,"#fff6e4",.5), bg:lighten(c,.9)}); }
-function setApplyCustom(){ const c=document.getElementById("setThemeColor").value; const v={green:c, greenD:darken(c,.12), gold:mix(c,"#fff6e4",.5), bg:lighten(c,.9)}; curTheme={key:"custom", v}; applyTheme(v); saveThemeObj(curTheme); if(current==="settings") render(); }
+// 设置模块内的自定义主题：主色 / 背景 / 点缀色 三色独立自定义
+function setThemeFullPreview(){
+  const g=document.getElementById("setThemeGreen").value;
+  const bg=document.getElementById("setThemeBg").value;
+  const gold=document.getElementById("setThemeGold").value;
+  applyTheme({green:g, greenD:darken(g,.12), gold, bg});
+}
+function setThemeFullSave(){
+  const g=document.getElementById("setThemeGreen").value;
+  const bg=document.getElementById("setThemeBg").value;
+  const gold=document.getElementById("setThemeGold").value;
+  const v={green:g, greenD:darken(g,.12), gold, bg};
+  curTheme={key:"custom", v}; applyTheme(v); saveThemeObj(curTheme);
+  if(current==="settings") render();
+}
+function hslToHex(h,s,l){ s/=100; l/=100; const k=n=>(n+h/30)%12; const a=s*Math.min(l,1-l); const f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1))); const to=x=>("0"+Math.round(x*255).toString(16)).slice(-2); return "#"+to(f(0))+to(f(8))+to(f(4)); }
+function setThemeFullRandom(){
+  const h=Math.floor(Math.random()*360);
+  const main=hslToHex(h,52,52), bg=hslToHex(h,40,96), gold=hslToHex((h+28)%360,62,62);
+  document.getElementById("setThemeGreen").value=main;
+  document.getElementById("setThemeBg").value=bg;
+  document.getElementById("setThemeGold").value=gold;
+  setThemeFullPreview();
+}
 // 背景颜色：与强调色独立存储
 const WB_BG = "qingchen-wb-bg";
 function loadBg(){ return localStorage.getItem(WB_BG)||""; }
@@ -1690,6 +1711,8 @@ const VIEWS = {
     const bgSaved = loadBg();
     const cardSaved = loadCard();
     const btnSaved = loadBtn();
+    const ct = (curTheme && curTheme.v) || THEMES[0].v;
+    const ctG = ct.green||"#8FBF6F"; const ctBg = ct.bg||"#FBF4E9"; const ctGold = ct.gold||"#E7B65A";
     return `
     <div class="card">
       <h2>⚙️ 设置</h2>
@@ -1725,12 +1748,26 @@ const VIEWS = {
 
       <div class="set-sec">
         <div class="set-t">主题强调色</div>
-        <div class="theme-row">${THEMES.map(t=>`<button class="theme-dot${curTheme.key===t.key?' on':''}" title="${t.name}" style="background:${t.v.green}" onclick="pickTheme('${t.key}')"></button>`).join("")}
-          <button class="theme-dot theme-custom${curTheme.key==='custom'?' on':''}" title="自定义颜色" onclick="setOpenCustom()">+</button></div>
-        <div id="setCustomTheme" style="display:${curTheme.key==='custom'?'flex':'none'};margin-top:12px;align-items:center;gap:12px">
-          <input type="color" id="setThemeColor" value="${curTheme.key==='custom'?curTheme.v.green:'#8FBF6F'}" oninput="setPreviewCustom()" style="width:46px;height:40px;border:none;background:none;cursor:pointer;padding:0"/>
-          <button class="btn sm" onclick="setApplyCustom()">应用自定义色</button>
+        <div class="theme-row">${THEMES.map(t=>`<button class="theme-dot${curTheme.key===t.key?' on':''}" title="${t.name}" style="background:${t.v.green}" onclick="pickTheme('${t.key}')"></button>`).join("")}</div>
+        <div class="set-hint">点一下整套配色（强调色+背景+点缀色）一起换。</div>
+      </div>
+
+      <div class="set-sec">
+        <div class="set-t">🎨 自定义主题</div>
+        <div class="set-hint">自由搭配主色、背景、点缀色，调好点「应用并保存」即可生效。</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:8px">
+          <label style="display:flex;flex-direction:column;align-items:center;gap:5px;font-size:12px;color:var(--muted)">主色
+            <input type="color" id="setThemeGreen" value="${ctG}" oninput="setThemeFullPreview()" style="width:46px;height:38px;border:none;background:none;cursor:pointer;padding:0"/></label>
+          <label style="display:flex;flex-direction:column;align-items:center;gap:5px;font-size:12px;color:var(--muted)">背景
+            <input type="color" id="setThemeBg" value="${ctBg}" oninput="setThemeFullPreview()" style="width:46px;height:38px;border:none;background:none;cursor:pointer;padding:0"/></label>
+          <label style="display:flex;flex-direction:column;align-items:center;gap:5px;font-size:12px;color:var(--muted)">点缀色
+            <input type="color" id="setThemeGold" value="${ctGold}" oninput="setThemeFullPreview()" style="width:46px;height:38px;border:none;background:none;cursor:pointer;padding:0"/></label>
         </div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn sm" onclick="setThemeFullSave()">应用并保存</button>
+          <button class="btn ghost sm" onclick="setThemeFullRandom()">🎲 随机配色</button>
+        </div>
+        ${curTheme.key==='custom'?'<div class="set-hint" style="margin-top:8px;color:var(--green-d)">✓ 当前正在使用你的自定义主题</div>':''}
       </div>
 
       <div class="set-sec">
