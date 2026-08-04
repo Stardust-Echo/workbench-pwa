@@ -392,6 +392,9 @@
   .song-filters{display:flex; gap:8px; flex-wrap:wrap; margin:4px 0 10px}
   .song-chip{font-size:13px; padding:5px 12px; border-radius:20px; border:1px solid var(--line); background:var(--bg); cursor:pointer; color:var(--muted); user-select:none}
   .song-chip.on{background:var(--green); color:#fff; border-color:var(--green)}
+  .song-tabs{display:flex; gap:8px; margin:2px 0 12px}
+  .song-tab{flex:1; text-align:center; font-size:14px; padding:9px 0; border-radius:12px; border:1px solid var(--line); background:var(--bg); cursor:pointer; color:var(--muted); user-select:none}
+  .song-tab.on{background:color-mix(in srgb, var(--gold) 22%, var(--card)); color:var(--ink); border-color:var(--gold); font-weight:600}
   .song-card{border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-top:10px; display:flex; gap:12px; align-items:flex-start}
   .song-card .sc-cover{width:52px; height:52px; border-radius:10px; object-fit:cover; flex:0 0 52px; background:var(--bg); align-self:center}
   .song-card .sc-main{flex:1; min-width:0}
@@ -489,6 +492,26 @@ const FOOD_CAL = {
 /* ---------- 音乐风格标签 ---------- */
 const SONG_STYLES = ["治愈","放松","运动","学习","睡前","怀旧","欢快","专注","国风","流行","电子","轻音乐"];
 
+/* ---------- 内置热门歌曲（含歌词 + 跳转试听） ---------- */
+const HOT_SONGS = [
+  {title:"孤勇者",singer:"陈奕迅",style:"热血",lyric:"爱你孤身走暗巷，爱你不跪的模样，爱你对峙过绝望，不肯哭一场。"},
+  {title:"晴天",singer:"周杰伦",style:"怀旧",lyric:"故事的小黄花，从出生那年就飘着，童年的荡秋千，随记忆一直晃到现在。"},
+  {title:"起风了",singer:"买辣椒也用券",style:"治愈",lyric:"这一路上走走停停，顺着少年漂流的痕迹，迈出车站的前一刻，竟有些犹豫。"},
+  {title:"海阔天空",singer:"Beyond",style:"经典",lyric:"原谅我这一生不羁放纵爱自由，也会怕有一天会跌倒，背弃了理想谁人都可以。"},
+  {title:"稻香",singer:"周杰伦",style:"治愈",lyric:"对这个世界如果你有太多的抱怨，跌倒了就不敢继续往前走，为什么人要这么的脆弱堕落。"},
+  {title:"平凡之路",singer:"朴树",style:"励志",lyric:"徘徊着的，在路上的，你要走吗，易碎的，骄傲的，那也曾是我的模样。"},
+  {title:"光年之外",singer:"邓紫棋",style:"电子",lyric:"感受停在我发端的指尖，如何瞬间冻结时间，记住望着我坚定的双眼。"},
+  {title:"演员",singer:"薛之谦",style:"伤感",lyric:"该配合你演出的我，演视而不见，在逼一个最爱你的人即兴表演。"},
+  {title:"夜空中最亮的星",singer:"逃跑计划",style:"励志",lyric:"夜空中最亮的星，能否听清，那仰望的人，心底的孤独和叹息。"},
+  {title:"小幸运",singer:"田馥甄",style:"治愈",lyric:"原来你是我最想留住的幸运，原来我们和爱情曾经靠得那么近。"},
+  {title:"成都",singer:"赵雷",style:"民谣",lyric:"和我在成都的街头走一走，喔哦，直到所有的灯都熄灭了也不停留。"},
+  {title:"模特",singer:"李荣浩",style:"流行",lyric:"拼命想 show 却总是搞砸了，但这和我，并不是那么有关，真的。",url:"https://y.music.163.com/m/song?srctype=2&songId=28965746"},
+];
+function songPlayUrl(s){
+  if(s.url) return s.url;
+  return "https://music.163.com/#/search/m/?s="+encodeURIComponent(s.title||"");
+}
+
 /* ---------- 名言名句（学习管理小框随机推荐） ---------- */
 const FAMOUS = [
   {t:"学而不思则罔，思而不学则殆。", a:"《论语》"},
@@ -510,6 +533,7 @@ const FAMOUS = [
 let famousIdx = 0;
 let songIdx = 0;
 let songFilter = "全部";
+let songTab = "hot";
 function famousQuote(){ return FAMOUS[famousIdx % FAMOUS.length]; }
 function shuffleFamous(){ famousIdx = Math.floor(Math.random()*FAMOUS.length); render(); }
 
@@ -1058,68 +1082,99 @@ const VIEWS = {
   },
 
   read:()=>{
-    const list = state.read||[];
-    const filt = (!songFilter || songFilter==="全部") ? list : list.filter(s=>s.style===songFilter);
-    const feat = list.length ? list[songIdx % list.length] : null;
-    const styles = [...new Set(list.map(s=>s.style).filter(Boolean))];
+    const mine = state.read||[];
+    const hot = HOT_SONGS;
+    const isMine = songTab==="mine";
+    const pool = isMine ? mine : hot;
+    const filt = (isMine && songFilter && songFilter!=="全部") ? mine.filter(s=>s.style===songFilter) : pool;
+    const allPool = hot.concat(mine);
+    const feat = allPool.length ? allPool[songIdx % allPool.length] : null;
+    const styles = [...new Set(pool.map(s=>s.style).filter(Boolean))];
     return `
     <div class="card">
-      <h2>🎵 音乐推荐 <span class="tag">收藏 & 推荐好歌</span></h2>
+      <h2>🎵 音乐推荐 <span class="tag">热门好歌 + 歌词</span></h2>
 
       <div class="song-feat">
         <div class="sf-h"><span>🎧 今日推荐</span>${feat?'<span onclick="shuffleSong()">🎲 换一首</span>':''}</div>
         ${feat?`
           <div class="sf-card">
-            ${feat.img?`<img class="sf-cover" src="${esc(feat.img)}"/>`:`<div class="sf-cover"></div>`}
+            <div class="sf-cover"></div>
             <div style="min-width:0">
-              <div class="sf-title">${esc(feat.title||"无题")}</div>
-              <div class="sf-singer">${esc(feat.singer||"未知歌手")}</div>
-              ${feat.reason?`<div class="sf-reason">${esc(feat.reason)}</div>`:''}
+              <div class="sf-title">${esc(feat.title)} · ${esc(feat.singer||"")}</div>
+              ${feat.lyric?`<div class="sf-reason">${esc(feat.lyric)}</div>`:''}
             </div>
           </div>
-          ${feat.url?`<a class="btn ghost" href="${esc(feat.url)}" target="_blank" rel="noopener">▶ 去听听</a>`:''}
-        `:'<div class="empty" style="padding:4px 0">还没有收藏的音乐，下面添加一首吧</div>'}
+          <a class="btn ghost" href="${esc(songPlayUrl(feat))}" target="_blank" rel="noopener">▶ 试听 / 跳转</a>
+        `:'<div class="empty" style="padding:4px 0">没有可推荐的音乐</div>'}
       </div>
 
-      <div class="add">
-        <input id="s-title" placeholder="歌名 / 曲名" />
-        <input id="s-singer" placeholder="歌手（选填）" />
-      </div>
-      <div class="add" style="margin-top:8px">
-        <input id="s-style" list="songStyles" placeholder="风格标签，如：治愈/运动/睡前" style="flex:1" />
-        <datalist id="songStyles">${SONG_STYLES.map(s=>`<option value="${s}">`).join("")}</datalist>
-        <input id="s-url" placeholder="试听链接（选填）" style="flex:1.3" />
-      </div>
-      <div class="add" style="margin-top:8px">
-        <input id="s-reason" placeholder="推荐理由…" style="flex:1" />
-        <button class="btn" onclick="addSong()">添加</button>
-      </div>
-      <div class="img-bar">
-        <label class="img-btn">📷 封面<input id="s-img" type="file" accept="image/*" style="display:none" onchange="onSongImg(this)"/></label>
-        ${songImg?`<div class="img-prev"><img src="${songImg}"/><span class="x" onclick="clearSongImg()">✕</span></div>`:''}
+      <div class="song-tabs">
+        <span class="song-tab ${!isMine?'on':''}" onclick="setSongTab('hot')">🔥 热门推荐</span>
+        <span class="song-tab ${isMine?'on':''}" onclick="setSongTab('mine')">⭐ 我的收藏 (${mine.length})</span>
       </div>
 
-      <div class="song-filters">
-        <span class="song-chip ${(!songFilter||songFilter==='全部')?'on':''}" onclick="setSongFilter('全部')">全部</span>
-        ${styles.map(st=>`<span class="song-chip ${songFilter===st?'on':''}" onclick="setSongFilter('${esc(st)}')">${esc(st)}</span>`).join("")}
-      </div>
+      ${isMine?`
+        <div class="add">
+          <input id="s-title" placeholder="歌名 / 曲名" />
+          <input id="s-singer" placeholder="歌手（选填）" />
+        </div>
+        <div class="add" style="margin-top:8px">
+          <input id="s-style" list="songStyles" placeholder="风格标签，如：治愈/运动/睡前" style="flex:1" />
+          <datalist id="songStyles">${SONG_STYLES.map(s=>`<option value="${s}">`).join("")}</datalist>
+          <input id="s-url" placeholder="试听链接（选填）" style="flex:1.3" />
+        </div>
+        <div class="add" style="margin-top:8px">
+          <input id="s-reason" placeholder="推荐理由 / 歌词片段…" style="flex:1" />
+          <button class="btn" onclick="addSong()">添加</button>
+        </div>
+        <div class="img-bar">
+          <label class="img-btn">📷 封面<input id="s-img" type="file" accept="image/*" style="display:none" onchange="onSongImg(this)"/></label>
+          ${songImg?`<div class="img-prev"><img src="${songImg}"/><span class="x" onclick="clearSongImg()">✕</span></div>`:''}
+        </div>
 
-      ${filt.length?filt.slice().reverse().map(s=>{
-        const idx=list.indexOf(s);
-        return `<div class="song-card">
-          ${s.img?`<img class="sc-cover" src="${esc(s.img)}"/>`:`<div class="sc-cover"></div>`}
-          <div class="sc-main">
-            <div class="sc-title">${esc(s.title||"无题")}</div>
-            <div class="sc-singer">${esc(s.singer||"未知歌手")}</div>
-            ${s.style?`<span class="sc-style">${esc(s.style)}</span>`:''}
-            ${s.reason?`<div class="sc-reason">${esc(s.reason)}</div>`:''}
-          </div>
-          <div class="sc-actions">
-            ${s.url?`<a class="sc-play" href="${esc(s.url)}" target="_blank" rel="noopener">▶ 试听</a>`:''}
-            <div class="del" onclick="delSong(${idx})">删除</div>
-          </div>
-        </div>`;
-      }).join(""):'<div class="empty">这里还没有歌曲</div>'}
+        <div class="song-filters">
+          <span class="song-chip ${(!songFilter||songFilter==='全部')?'on':''}" onclick="setSongFilter('全部')">全部</span>
+          ${styles.map(st=>`<span class="song-chip ${songFilter===st?'on':''}" onclick="setSongFilter('${esc(st)}')">${esc(st)}</span>`).join("")}
+        </div>
+
+        ${filt.length?filt.slice().reverse().map(s=>{
+          const idx=mine.indexOf(s);
+          return `<div class="song-card">
+            ${s.img?`<img class="sc-cover" src="${esc(s.img)}"/>`:`<div class="sc-cover"></div>`}
+            <div class="sc-main">
+              <div class="sc-title">${esc(s.title||"无题")}</div>
+              <div class="sc-singer">${esc(s.singer||"未知歌手")}</div>
+              ${s.style?`<span class="sc-style">${esc(s.style)}</span>`:''}
+              ${(s.reason||s.lyric)?`<div class="sc-reason">${esc(s.reason||s.lyric)}</div>`:''}
+            </div>
+            <div class="sc-actions">
+              <a class="sc-play" href="${esc(songPlayUrl(s))}" target="_blank" rel="noopener">▶ 试听</a>
+              <div class="del" onclick="delSong(${idx})">删除</div>
+            </div>
+          </div>`;
+        }).join(""):'<div class="empty">还没有收藏的音乐，去「热门推荐」里点 ＋收藏 吧</div>'}
+      `:`
+        <div class="song-filters">
+          <span class="song-chip ${(!songFilter||songFilter==='全部')?'on':''}" onclick="setSongFilter('全部')">全部</span>
+          ${styles.map(st=>`<span class="song-chip ${songFilter===st?'on':''}" onclick="setSongFilter('${esc(st)}')">${esc(st)}</span>`).join("")}
+        </div>
+
+        ${filt.length?filt.map((h,i)=>{
+          const idx=HOT_SONGS.indexOf(h);
+          return `<div class="song-card">
+            <div class="sc-cover"></div>
+            <div class="sc-main">
+              <div class="sc-title">${esc(h.title)} · ${esc(h.singer)}</div>
+              ${h.style?`<span class="sc-style">${esc(h.style)}</span>`:''}
+              ${h.lyric?`<div class="sc-reason">${esc(h.lyric)}</div>`:''}
+            </div>
+            <div class="sc-actions">
+              <a class="sc-play" href="${esc(songPlayUrl(h))}" target="_blank" rel="noopener">▶ 试听</a>
+              <div class="del" onclick="collectHot(${idx})">＋收藏</div>
+            </div>
+          </div>`;
+        }).join(""):'<div class="empty">该风格下暂无歌曲</div>'}
+      `}
     </div>`;
   },
 
@@ -1470,7 +1525,7 @@ function addSong(){
   const reason=($("#s-reason").value||"").trim();
   const url=($("#s-url").value||"").trim();
   if(!title && !singer && !style && !reason && !url && !songImg) return;
-  state.read.push({title, singer, style, reason, url, img:songImg, ts:Date.now()});
+  state.read.push({title, singer, style, reason, lyric:reason, url, img:songImg, ts:Date.now()});
   songImg=null; save(); render();
   const t=$("#s-title"); if(t) t.value="";
   const sg=$("#s-singer"); if(sg) sg.value="";
@@ -1479,8 +1534,10 @@ function addSong(){
   const u=$("#s-url"); if(u) u.value="";
 }
 function delSong(idx){ if(idx>=0 && idx<state.read.length) state.read.splice(idx,1); save(); render(); }
-function shuffleSong(){ const n=state.read.length; if(n) songIdx=Math.floor(Math.random()*n); render(); }
+function shuffleSong(){ const n=(HOT_SONGS.length + (state.read||[]).length); if(n) songIdx=Math.floor(Math.random()*n); render(); }
 function setSongFilter(s){ songFilter=s; render(); }
+function setSongTab(t){ songTab=t; render(); }
+function collectHot(idx){ const h=HOT_SONGS[idx]; if(!h) return; if((state.read||[]).some(x=>x.title===h.title && x.singer===h.singer)) return; state.read.push({title:h.title,singer:h.singer,style:h.style,lyric:h.lyric,url:h.url,ts:Date.now()}); save(); render(); }
 function addFood(){
   const name=($("#fd-name").value||"").trim();
   const g=parseFloat($("#fd-g").value)||0;
