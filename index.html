@@ -1027,7 +1027,7 @@ const VIEWS = {
               <div class="diary-time">${fmtDate(ts)}</div>
             </div>
             ${x.img?`<div class="entry-img"><img src="${x.img}"/></div>`:''}
-            <div class="diary-foot"><span class="clk">🕒 ${fmtTime(ts)}</span><span class="x" onclick="delMood('${x.id||''}',${state.mood.indexOf(x)})">删除</span></div>
+            <div class="diary-foot"><span class="clk">🕒 ${fmtTime(ts)}</span>${x.img?`<span class="x" onclick="delMoodImg('${x.id||''}',${state.mood.indexOf(x)})">删图</span>`:''}<span class="x" onclick="delMood('${x.id||''}',${state.mood.indexOf(x)})">删除</span></div>
           </div>`;
         }).join(""):'<div class="empty">今天还没记录心情</div>'}
       </div>
@@ -1172,7 +1172,7 @@ const VIEWS = {
         <label class="img-btn">📷 图片<input type="file" accept="image/*" hidden onchange="onIdeaImg(this)"/></label>
         ${ideaImg?`<div class="img-prev"><img src="${ideaImg}"/><span class="x" onclick="clearIdeaImg()">✕</span></div>`:''}
       </div>
-      ${state.idea.map((x,i)=>{const t=typeof x==='string'?x:x.text; const im=typeof x==='string'?null:x.img; return `<div class="row"><span>💭</span><div class="txt">${esc(t)}${im?`<div class="entry-img"><img src="${im}"/></div>`:''}</div><div class="del" onclick="delIdea(${i})">删除</div></div>`;}).join("")}
+      ${state.idea.map((x,i)=>{const t=typeof x==='string'?x:x.text; const im=typeof x==='string'?null:x.img; return `<div class="row"><span>💭</span><div class="txt">${esc(t)}${im?`<div class="entry-img"><img src="${im}"/></div>`:''}</div><div class="del" onclick="delIdea(${i})">删除</div>${im?`<div class="del" onclick="delIdeaImg(${i})">删图</div>`:''}</div>`;}).join("")}
     </div>`,
 
   money:()=>{
@@ -1260,7 +1260,7 @@ const VIEWS = {
             </div>
             <div class="diary-body">${esc(n.text)}</div>
             ${n.img?`<div class="entry-img"><img src="${n.img}"/></div>`:''}
-            <div class="diary-foot" style="border-color:rgba(0,0,0,.08)"><span class="clk">🕒 ${fmtTime(ts)}</span><span class="x" onclick="delNote(${n.id})">删除</span></div>
+            <div class="diary-foot" style="border-color:rgba(0,0,0,.08)"><span class="clk">🕒 ${fmtTime(ts)}</span>${n.img?`<span class="x" onclick="delNoteImg(${n.id})">删图</span>`:''}<span class="x" onclick="delNote(${n.id})">删除</span></div>
           </div>`;
         }).join("")}
       </div>
@@ -1286,7 +1286,7 @@ const VIEWS = {
           </div>
           <div class="diary-body">${esc(item.text)}</div>
           ${item.img?`<div class="entry-img"><img src="${item.img}"/></div>`:''}
-          <div class="diary-foot"><span class="clk">🕒 ${fmtTime(item.ts)}</span><span class="x" onclick="delWhisper(${i})">删除</span></div>
+          <div class="diary-foot"><span class="clk">🕒 ${fmtTime(item.ts)}</span>${item.img?`<span class="x" onclick="delWhisperImg(${i})">删图</span>`:''}<span class="x" onclick="delWhisper(${i})">删除</span></div>
         </div>`;
       }).join("")}
     </div>`,
@@ -1465,6 +1465,7 @@ function saveMoodNote(){const note=$("#m-note").value.trim();const last=state._l
   const i=$("#m-note"); if(i) i.value="";}
 function addIdea(){const v=$("#i-in").value.trim();if(!v&&!ideaImg)return;state.idea.unshift({text:v,img:ideaImg});ideaImg=null;save();render();const i=$("#i-in");if(i)i.value="";}
 function delIdea(i){state.idea.splice(i,1);save();render()}
+function delIdeaImg(i){ if(state.idea[i]&&typeof state.idea[i]==='object'){state.idea[i].img=null;save();render()} }
 function addMoney(){const type=$("#m-type").value;const amt=+$("#m-amt").value;if(!amt)return;
   const cat=$("#m-cat").value.trim()||(type==="in"?"存入":"支出");
   state.money.records.unshift({date:new Date().toISOString().slice(5,10),type,cat,amount:amt,note:""});
@@ -1488,11 +1489,14 @@ function addNote(){const v=$("#n-in").value.trim();if(!v&&!noteImg)return;
   const i=$("#n-in"); if(i) i.value="";}
 function pickIc(ic){ noteSelIc=ic; document.querySelectorAll('#icPick .ic-chip').forEach(c=>c.classList.toggle('on', c.textContent===ic)); }
 function delNote(id){state.notes=state.notes.filter(x=>x.id!==id);save();render()}
+function delNoteImg(id){ const n=state.notes.find(x=>x.id===id); if(n){n.img=null;save();render()} }
 function delMood(id,idx){if(id) state.mood=state.mood.filter(x=>x.id!==id); else state.mood.splice(idx,1); save();render()}
+function delMoodImg(id,idx){ const x = id? state.mood.find(y=>y.id===id) : state.mood[idx]; if(x){x.img=null;save();render()} }
 function addWhisper(){const v=$("#w-in").value.trim();if(!v&&!whisperImg)return;
   state.whisper.unshift({text:v,ts:Date.now(),img:whisperImg});whisperImg=null;save();render();
   const i=$("#w-in"); if(i) i.value="";}
 function delWhisper(i){state.whisper.splice(i,1);save();render()}
+function delWhisperImg(i){ if(state.whisper[i]&&typeof state.whisper[i]==='object'){state.whisper[i].img=null;save();render()} }
 
 /* ---------------- 账户 / Supabase 云同步 ---------------- */
 function toggleModal(){ $("#accountModal").classList.toggle("on"); renderModal(); }
