@@ -321,13 +321,13 @@
 
   /* 今日概览：环形进度 + 联动小卡 */
   .ov{display:flex; gap:14px; align-items:center}
-  .ov-ring{position:relative; width:84px; height:84px; flex:0 0 84px; display:grid; place-items:center}
-  .ov-ring svg{transform:rotate(-90deg)}
-  .ov-ring b{position:absolute; font-size:18px; font-weight:700; color:var(--green-d); font-feature-settings:"tnum"}
-  .ov-ring .ov-cap{position:absolute; bottom:-2px; font-size:11px; color:var(--muted)}
-  .ov-grid{flex:1; display:grid; grid-template-columns:repeat(3,1fr); gap:9px}
+  .ov-ring{position:relative; width:104px; height:104px; flex:0 0 104px; display:grid; place-items:center; background:color-mix(in srgb, var(--green) 6%, var(--card)); border:1px solid color-mix(in srgb, var(--green) 18%, transparent); border-radius:14px; padding:8px; box-sizing:border-box}
+  .ov-ring svg{transform:rotate(-90deg); display:block}
+  .ov-ring b{position:absolute; left:0; right:0; top:50%; transform:translateY(-58%); text-align:center; font-size:18px; font-weight:700; color:var(--green-d); font-feature-settings:"tnum"}
+  .ov-ring .ov-cap{position:absolute; left:0; right:0; bottom:8px; text-align:center; font-size:11px; color:var(--muted); letter-spacing:.5px}
+  .ov-grid{flex:1; min-width:0; display:grid; grid-template-columns:repeat(3,1fr); gap:9px}
   .ov-cell{background:color-mix(in srgb, var(--green) 6%, transparent); border:1px solid color-mix(in srgb, var(--green) 16%, transparent);
-    border-radius:12px; padding:9px 10px; cursor:pointer; transition:transform .12s}
+    border-radius:12px; padding:9px 6px; cursor:pointer; transition:transform .12s; min-width:0; overflow:hidden; text-align:center}
   .ov-cell:active{transform:scale(.97)}
   .ov-cell .ov-ic{font-size:16px}
   .ov-cell .ov-num{font-size:17px; font-weight:700; color:var(--ink); font-feature-settings:"tnum"; margin-top:2px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
@@ -335,7 +335,7 @@
   .ov-cell .ov-lab{font-size:11px; color:var(--muted); margin-top:1px}
   .ov-cell .ov-bar{margin-top:5px; height:4px; background:color-mix(in srgb, var(--green) 14%, transparent); border-radius:99px; overflow:hidden}
   .ov-cell .ov-bar i{display:block; height:100%; background:linear-gradient(90deg, var(--green), var(--gold)); border-radius:99px}
-  @media(max-width:380px){ .ov-grid{grid-template-columns:repeat(2,1fr)} .ov-ring{display:none} .ov{display:block} }
+  @media(max-width:380px){ .ov-grid{grid-template-columns:repeat(2,1fr)} .ov{display:block} .ov-ring{margin:0 auto 12px} }
 
   /* 快捷记录：首页一键直达，缩短操作路径 */
   .quick-acts{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap}
