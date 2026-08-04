@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#FBF4E9" />
+<title>清晨工作台</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" type="image/svg+xml" href="icon.svg" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#FBF4E9; --card:#FFFFFF; --ink:#4A4039; --muted:#9B8F82;
+    --line:#EFE6D6; --green:#8FBF6F; --green-d:#7AAE5A; --pink:#F4A6A6;
+    --gold:#E7B65A; --blue:#8FB6DD; --shadow:0 6px 20px rgba(120,95,60,.10);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--ink); overflow:hidden;
+  }
+  .app{display:flex; height:100vh; height:100dvh}
+
+  /* ---------- 侧栏（桌面） ---------- */
+  .sidebar{
+    width:200px; flex:0 0 200px; background:rgba(255,255,255,.55);
+    backdrop-filter:blur(6px); border-right:1px solid var(--line);
+    padding:18px 12px; display:flex; flex-direction:column; gap:4px; overflow-y:auto;
+  }
+  .brand{display:flex; align-items:center; gap:10px; padding:4px 8px 14px}
+  .brand .logo{width:34px;height:34px;border-radius:10px;background:var(--green);
+    display:grid;place-items:center;color:#fff;font-weight:700;font-size:18px}
+  .brand b{font-size:16px}
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:12px;
+    color:var(--muted); cursor:pointer; font-size:14px; font-weight:500; user-select:none;
+    transition:background .15s,color .15s;
+  }
+  .nav-item .ic{font-size:17px;width:20px;text-align:center}
+  .nav-item:hover{background:rgba(143,191,111,.12)}
+  .nav-item.active{background:var(--ink); color:#fff}
+  .nav-item.active:hover{background:var(--ink)}
+
+  /* ---------- 主区 ---------- */
+  .main{flex:1; display:flex; flex-direction:column; min-width:0}
+  .topbar{padding:18px 26px 8px; display:flex; align-items:flex-end; justify-content:space-between}
+  .topbar h1{margin:0; font-size:22px}
+  .topbar .date{color:var(--muted); font-size:13px; margin-top:3px}
+  .topbar .hello{color:var(--muted); font-size:13px; margin-right:auto}
+  .view{flex:1; overflow-y:auto; padding:10px 26px 30px}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:18px 20px; margin-bottom:16px}
+  .card h2{margin:0 0 14px; font-size:16px; display:flex; align-items:center; gap:8px}
+  .card h2 .tag{font-size:12px;color:var(--muted);font-weight:400;margin-left:auto}
+  .grid{display:grid; gap:14px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:560px){.g2,.g3{grid-template-columns:1fr}}
+
+  .stat{background:#FBF7EF;border:1px solid var(--line);border-radius:14px;padding:14px}
+  .stat .k{font-size:12px;color:var(--muted)}
+  .stat .v{font-size:22px;font-weight:700;margin-top:4px}
+  .stat .v small{font-size:13px;color:var(--muted);font-weight:500}
+  .progress{height:12px;border-radius:8px;background:var(--line);overflow:hidden;margin-top:10px}
+  .progress>i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,var(--green),var(--gold))}
+  .up{color:var(--green-d)} .down{color:#D9695F}
+
+  .row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px dashed var(--line)}
+  .row:last-child{border-bottom:none}
+  .row .txt{flex:1;font-size:14px}
+  .row .meta{font-size:12px;color:var(--muted)}
+  .chk{width:20px;height:20px;border-radius:7px;border:2px solid var(--line);flex:0 0 auto;
+    display:grid;place-items:center;cursor:pointer;color:#fff;font-size:12px;transition:.15s}
+  .chk.on{background:var(--green);border-color:var(--green)}
+  .done .txt{text-decoration:line-through;color:var(--muted)}
+  .del{cursor:pointer;color:var(--muted);background:#FBF7EF;border:1px solid var(--line);
+    padding:5px 11px;border-radius:9px;font-size:12px;font-family:inherit;transition:.15s}
+  .del:hover{background:#FBEAEA;color:#D9695F;border-color:#F4C9C9}
+
+  .add{display:flex;gap:8px;margin:6px 0 4px}
+  .add input,.add select{flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:11px;
+    background:#FBF7EF;font-size:14px;font-family:inherit;color:var(--ink);outline:none}
+  .add input:focus{border-color:var(--green)}
+  .btn{border:none;border-radius:11px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;
+    background:var(--green);color:#fff;font-family:inherit}
+  .btn:hover{background:var(--green-d)}
+  .btn.ghost{background:#FBF7EF;color:var(--ink);border:1px solid var(--line)}
+  .btn.ghost:hover{background:#fff}
+  .btn.sm{padding:7px 12px;font-size:13px}
+  .mini{border:1px solid var(--line);background:#FBF7EF;color:var(--muted);border-radius:9px;padding:6px 12px;font-size:13px;cursor:pointer;font-family:inherit}
+  .mini:hover{background:#fff;color:var(--ink)}
+  .goal-in{border:1px solid var(--line);background:#fff;border-radius:8px;padding:3px 8px;font-size:13px;width:96px;font-family:inherit;color:var(--ink)}
+  .goal-in:focus{outline:none;border-color:var(--green)}
+
+  /* 日记卡片（心情/便签/树洞） */
+  .diary{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:#fff;margin-top:12px;position:relative}
+  .diary-head{display:flex;align-items:center;gap:10px}
+  .diary-av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:20px;background:#F4ECDB;flex:0 0 auto}
+  .diary-name{font-weight:600;font-size:14px;color:var(--ink);line-height:1.2}
+  .diary-sub{font-size:11px;color:var(--muted);margin-top:2px}
+  .diary-time{margin-left:auto;text-align:right;font-size:12px;line-height:1.4;color:var(--muted)}
+  .diary-time b{color:var(--ink);font-weight:600;font-size:13px}
+  .diary-time .yr{color:var(--muted);font-size:11px;margin-left:2px}
+  .diary-body{font-size:14px;color:var(--ink);line-height:1.7;white-space:pre-wrap;word-break:break-word}
+  .diary-foot{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px;padding-top:8px;border-top:1px dashed var(--line)}
+  .diary-foot .clk{display:inline-flex;align-items:center;gap:4px}
+  .diary-foot .x{margin-left:auto;cursor:pointer;color:var(--muted);padding:3px 9px;border-radius:8px;font-size:12px}
+  .diary-foot .x:hover{background:#FBEAEA;color:#D9695F}
+  .goal-in::-webkit-outer-spin-button,.goal-in::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .goal-in{-moz-appearance:textfield}
+  .seg{display:inline-flex;background:#FBF7EF;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .seg button{border:none;background:none;padding:8px 14px;font-size:13px;cursor:pointer;color:var(--muted);font-family:inherit}
+  .seg button.on{background:var(--green);color:#fff}
+
+  .habit{display:flex;align-items:center;gap:12px}
+  .habit .name{flex:1;font-size:14px;font-weight:500}
+  .week{display:flex;gap:6px}
+  .day{width:26px;height:26px;border-radius:8px;background:#FBF7EF;border:1px solid var(--line);
+    display:grid;place-items:center;font-size:12px;color:var(--muted);cursor:pointer}
+  .day.on{background:var(--green);color:#fff;border-color:var(--green)}
+
+  .moods{display:flex;gap:10px;flex-wrap:wrap}
+  .mood{width:52px;height:52px;border-radius:14px;background:#FBF7EF;border:1px solid var(--line);
+    font-size:26px;display:grid;place-items:center;cursor:pointer;transition:.15s}
+  .mood.on,.mood:hover{border-color:var(--gold);background:#FFF6E4}
+
+  .notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+  .note{padding:14px 14px 30px;border-radius:14px;min-height:110px;position:relative;
+    box-shadow:0 4px 12px rgba(120,95,60,.12);font-size:14px;line-height:1.5;word-break:break-word}
+  .note .x{position:absolute;right:8px;bottom:6px;cursor:pointer;color:rgba(0,0,0,.3);font-size:13px}
+  .note .x:hover{color:#C0392B}
+  .note .t{position:absolute;left:10px;bottom:7px;font-size:10px;color:rgba(0,0,0,.3)}
+
+  .empty{color:var(--muted);font-size:13px;padding:8px 2px}
+
+  /* ---------- 账户 / 弹窗 ---------- */
+  .account{display:flex;align-items:center}
+  .account-btn{cursor:pointer;border:1px solid var(--line);background:#FBF7EF;border-radius:20px;
+    padding:7px 14px;font-size:13px;color:var(--ink);display:flex;align-items:center;gap:7px;font-family:inherit}
+  .account-btn:hover{background:#fff}
+  .avatar{width:24px;height:24px;border-radius:50%;background:var(--green);color:#fff;
+    display:grid;place-items:center;font-size:12px;font-weight:700}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block}
+  .sync-dot.off{background:#ccc}
+  .modal{position:fixed;inset:0;background:rgba(74,64,57,.35);display:none;place-items:center;z-index:50;padding:20px}
+  .modal.on{display:grid}
+  .modal .box{position:relative;background:#fff;border-radius:18px;padding:22px;width:100%;max-width:360px;box-shadow:var(--shadow)}
+  .modal h3{margin:0 0 14px;font-size:17px}
+  .modal .field{margin-bottom:12px}
+  .modal label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
+  .modal input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:11px;
+    background:#FBF7EF;font-size:14px;font-family:inherit;outline:none}
+  .modal input:focus{border-color:var(--green)}
+  .modal .row2{display:flex;gap:8px;margin-top:6px}
+  .modal .row2 .btn{flex:1}
+  .modal .tip{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6}
+  .modal .tip a{color:var(--green-d)}
+  .modal .close{position:absolute;top:12px;right:16px;cursor:pointer;color:var(--muted);font-size:22px;line-height:1}
+  .modal .err{color:#D9695F;font-size:12px;margin-top:8px;min-height:14px}
+
+  /* ---------- 底部 Tab（手机） ---------- */
+  .tabbar{display:none}
+  @media(max-width:720px){
+    .sidebar{display:none}
+    .tabbar{display:flex; position:fixed; bottom:0; left:0; right:0; z-index:30;
+      background:rgba(255,255,255,.92); backdrop-filter:blur(10px); border-top:1px solid var(--line);
+      padding:6px 4px calc(6px + env(safe-area-inset-bottom)); overflow-x:auto; gap:2px}
+    .tab{flex:0 0 auto; min-width:56px; padding:6px 4px; display:flex; flex-direction:column;
+      align-items:center; gap:3px; font-size:11px; color:var(--muted); cursor:pointer; border-radius:10px}
+    .tab .ic{font-size:19px}
+    .tab.on{color:var(--green-d); background:rgba(143,191,111,.14)}
+    .view{padding:10px 16px 90px}
+    .topbar{padding:14px 16px 4px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">晨</div><b>清晨工作台</b></div>
+    <div id="nav"></div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="title">任务清单</h1>
+        <div class="date" id="date"></div>
+      </div>
+      <div class="hello" id="hello"></div>
+      <div class="account" id="accountBtn"></div>
+    </div>
+    <section class="view" id="view"></section>
+  </main>
+</div>
+<nav class="tabbar" id="tabbar"></nav>
+<div class="modal" id="accountModal" onclick="if(event.target===this)toggleModal()"></div>
+
+<script>
+const MODULES = [
+  {id:"tasks",   name:"任务清单", ic:"📝", color:"#8FBF6F"},
+  {id:"habit",   name:"习惯打卡", ic:"✅", color:"#E7B65A"},
+  {id:"mood",    name:"心情记录", ic:"🌈", color:"#F4A6A6"},
+  {id:"read",    name:"阅读",     ic:"📚", color:"#8FB6DD"},
+  {id:"fit",     name:"健身",     ic:"💪", color:"#C9A0DC"},
+  {id:"study",   name:"学习",     ic:"🎓", color:"#7FB3A3"},
+  {id:"project", name:"项目管理", ic:"📁", color:"#E0936B"},
+  {id:"idea",    name:"想法收集", ic:"💡", color:"#E7C24B"},
+  {id:"money",   name:"记账理财", ic:"💰", color:"#D9A441"},
+  {id:"notes",   name:"便签",     ic:"🗒️", color:"#9FC2E8"},
+  {id:"whisper", name:"树洞",     ic:"🌳", color:"#A8C686"},
+];
+
+const KEY = "qingchen-workbench-v1";
+const CFG_KEY = "qingchen-wb-cfg";
+let sb = null, user = null;
+
+function load(){ try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null} }
+function getCfg(){ try{return JSON.parse(localStorage.getItem(CFG_KEY))}catch(e){return null} }
+function save_local(){ localStorage.setItem(KEY, JSON.stringify(state)) }
+
+let state = load() || defaultState();
+function defaultState(){ return {
+  tasks:[{id:1,text:"整理本周工作台模块",done:false},{id:2,text:"读完《纳瓦尔宝典》第3章",done:true},{id:3,text:"给基金账户做一次再平衡",done:false}],
+  habit:[{name:"早起 7:00",week:[1,1,0,1,1,0,0]},{name:"喝水 2L",week:[1,1,1,0,1,0,1]},{name:"阅读 30 分钟",week:[1,0,1,1,0,1,0]}],
+  mood:[],
+  read:[{title:"纳瓦尔宝典",author:"埃里克·乔根森",progress:62,status:"在读"},{title:"置身事内",author:"兰小欢",progress:100,status:"已读"},{title:"事实",author:"汉斯·罗斯林",progress:20,status:"在读"}],
+  fit:[{date:"08-02",type:"力量",note:"胸 + 三头，45min"},{date:"08-01",type:"有氧",note:"跑步 5km"}],
+  study:[{title:"TypeScript 进阶",progress:40},{title:"系统设计入门",progress:15}],
+  project:[{name:"工作台 PWA",status:"进行中",note:"manifest + service worker"},{name:"需求文档 v2",status:"待启动",note:"本周内产出"}],
+  idea:["用 PWA 把工作台装进手机主屏","记账模块加基金净值曲线","便签支持语音速记"],
+  money:{goal:50000,saved:0,records:[]},
+  funds:[{name:"沪深300ETF",code:"510300",value:6800,change:1.2},{name:"中证白酒",code:"161725",value:3520,change:-0.4},{name:"黄金ETF",code:"518880",value:2520,change:0.7}],
+  notes:[{id:1,color:"#FFF2B8",text:"下周和设计师对齐工作台配色方案",ts:Date.now()-86400000*2},{id:2,color:"#D6E8C8",text:"记账模块要能手动添加基金净值",ts:Date.now()-86400000},{id:3,color:"#FBD3D3",text:"记得给妈妈订生日蛋糕 🎂",ts:Date.now()-3600000*5}],
+  whisper:[{text:"今天终于把工作台做成能装进手机的样子了，开心。",ts:Date.now()-86400000*3},{text:"最近基金有点绿，但长期拿着不慌。",ts:Date.now()-86400000*5}]
+};}
+
+/* ---- 统一保存入口：本地 + 云端 ---- */
+let saveTimer=null;
+function save(){
+  save_local();
+  if(sb && user){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>{
+      sb.from("workbench_state").upsert({ user_id:user.id, data:state, updated_at:new Date().toISOString() })
+        .then(()=>setSync(true)).catch(()=>setSync(false));
+    }, 400);
+  }
+}
+function setSync(ok){ const d=document.querySelector(".sync-dot"); if(d) d.classList.toggle("off",!ok); }
+
+  /* ---- 时间格式化（X月X日 · 星期X 2026  /  HH:MM）---- */
+  const W=["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
+  function fmtDate(ts){
+    const d=new Date(ts);
+    return `<b>${d.getMonth()+1}月${d.getDate()}日</b> · ${W[d.getDay()]} <span class="yr">${d.getFullYear()}</span>`;
+  }
+  function fmtTime(ts){
+    const d=new Date(ts),p=n=>String(n).padStart(2,"0");
+    return `${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+
+let current = "tasks";
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function buildNav(){
+  $("#nav").innerHTML = MODULES.map(m=>
+    `<div class="nav-item ${m.id===current?'active':''}" data-m="${m.id}"><span class="ic">${m.ic}</span>${m.name}</div>`).join("");
+  $("#tabbar").innerHTML = MODULES.map(m=>
+    `<div class="tab ${m.id===current?'on':''}" data-m="${m.id}"><span class="ic">${m.ic}</span>${m.name}</div>`).join("");
+  document.querySelectorAll(".nav-item,.tab").forEach(el=>el.onclick=()=>{current=el.dataset.m;buildNav();render();});
+}
+
+function render(){
+  const m = MODULES.find(x=>x.id===current);
+  $("#title").textContent = m.name;
+  $("#view").innerHTML = VIEWS[current]();
+  bind();
+}
+
+/* ---------------- 各模块视图 ---------------- */
+const VIEWS = {
+  tasks:()=>`
+    <div class="card">
+      <h2>📝 任务清单 <span class="tag">${state.tasks.filter(t=>t.done).length}/${state.tasks.length} 已完成</span></h2>
+      ${state.tasks.length?`<div class="progress"><i style="width:${Math.round(state.tasks.filter(t=>t.done).length/state.tasks.length*100)}%"></i></div>`:""}
+      <div class="add">
+        <input id="t-in" placeholder="添加一条任务，回车提交" />
+        <button class="btn" onclick="addTask()">添加</button>
+      </div>
+      ${state.tasks.length?state.tasks.map(t=>`
+        <div class="row ${t.done?'done':''}">
+          <div class="chk ${t.done?'on':''}" onclick="toggleTask(${t.id})">✓</div>
+          <div class="txt">${esc(t.text)}</div>
+          <div class="del" onclick="delTask(${t.id})">删除</div>
+        </div>`).join(""):'<div class="empty">还没有任务，加一条吧～</div>'}
+    </div>`,
+
+  habit:()=>`
+    <div class="card">
+      <h2>✅ 习惯打卡 <span class="tag">本周</span></h2>
+      ${state.habit.map((h,i)=>`
+        <div class="habit">
+          <div class="name">${esc(h.name)}</div>
+          <div class="week">
+            ${h.week.map((d,j)=>`<div class="day ${d?'on':''}" onclick="toggleHabit(${i},${j})">${["日","一","二","三","四","五","六"][j]}</div>`).join("")}
+          </div>
+          <div class="del" onclick="delHabit(${i})">删</div>
+        </div>`).join("")}
+      <div class="add" style="margin-top:12px">
+        <input id="h-in" placeholder="新增习惯，如：冥想 10 分钟" />
+        <button class="btn" onclick="addHabit()">添加</button>
+      </div>
+    </div>`,
+
+  mood:()=>{
+    const opts=[["😊","开心"],["😌","平静"],["😟","焦虑"],["😴","疲惫"],["😡","烦躁"],["🥰","幸福"]];
+    const last = state.mood[state.mood.length-1];
+    return `
+    <div class="card">
+      <h2>🌈 心情记录</h2>
+      <div class="moods">
+        ${opts.map(o=>`<div class="mood ${last&&last.emoji===o[0]?'on':''}" onclick="logMood('${o[0]}','${o[1]}')">${o[0]}</div>`).join("")}
+      </div>
+      <div class="add"><input id="m-note" placeholder="今天发生了什么？（可选）"/><button class="btn" onclick="saveMoodNote()">记一笔</button></div>
+      <div style="margin-top:10px">
+        ${state.mood.length?state.mood.slice().reverse().map(x=>{
+          const ts=x.ts||Date.now();
+          return `<div class="diary">
+            <div class="diary-head">
+              <div class="diary-av">${x.emoji}</div>
+              <div><div class="diary-name">${esc(x.label)}</div>
+                <div class="diary-sub">${x.note?esc(x.note):'记录此刻的心情'}</div></div>
+              <div class="diary-time">${fmtDate(ts)}</div>
+            </div>
+            <div class="diary-foot"><span class="clk">🕒 ${fmtTime(ts)}</span><span class="x" onclick="delMood('${x.id||''}',${state.mood.indexOf(x)})">删除</span></div>
+          </div>`;
+        }).join(""):'<div class="empty">今天还没记录心情</div>'}
+      </div>
+    </div>`;
+  },
+
+  read:()=>`
+    <div class="card">
+      <h2>📚 阅读</h2>
+      ${state.read.map(b=>`
+        <div class="row">
+          <div class="txt"><b>${esc(b.title)}</b><div class="meta">${esc(b.author)} · ${b.status}</div></div>
+          <div style="width:120px">
+            <div class="meta" style="text-align:right">${b.progress}%</div>
+            <div class="progress"><i style="width:${b.progress}%"></i></div>
+          </div>
+        </div>`).join("")}
+    </div>`,
+
+  fit:()=>`
+    <div class="card">
+      <h2>💪 健身记录</h2>
+      ${state.fit.length?state.fit.map(f=>`
+        <div class="row"><span style="font-size:18px">🏋️</span>
+          <div class="txt"><b>${f.type}</b> · ${esc(f.note)}</div><div class="meta">${f.date}</div></div>`).join(""):'<div class="empty">暂无记录</div>'}
+    </div>`,
+
+  study:()=>`
+    <div class="card">
+      <h2>🎓 学习进度</h2>
+      ${state.study.map(c=>`
+        <div class="row"><div class="txt"><b>${esc(c.title)}</b></div>
+          <div style="width:140px"><div class="meta" style="text-align:right">${c.progress}%</div>
+          <div class="progress"><i style="width:${c.progress}%"></i></div></div></div>`).join("")}
+    </div>`,
+
+  project:()=>`
+    <div class="card">
+      <h2>📁 项目管理</h2>
+      ${state.project.map(p=>`
+        <div class="row"><div class="txt"><b>${esc(p.name)}</b><div class="meta">${esc(p.note)}</div></div>
+          <div class="seg"><button class="${p.status==='进行中'?'on':''}" onclick="setProj('${esc(p.name)}','进行中')">进行中</button>
+          <button class="${p.status!=='进行中'?'on':''}" onclick="setProj('${esc(p.name)}','待启动')">待启动</button></div></div>`).join("")}
+    </div>`,
+
+  idea:()=>`
+    <div class="card">
+      <h2>💡 想法收集</h2>
+      <div class="add"><input id="i-in" placeholder="捕捉一个灵感"/><button class="btn" onclick="addIdea()">添加</button></div>
+      ${state.idea.map((x,i)=>`<div class="row"><span>💡</span><div class="txt">${esc(x)}</div><div class="del" onclick="delIdea(${i})">删除</div></div>`).join("")}
+    </div>`,
+
+  money:()=>{
+    const p = Math.round(state.money.saved/state.money.goal*100);
+    const fundTotal = state.funds.reduce((s,f)=>s+f.value,0);
+    const fundChg = state.funds.reduce((s,f)=>s+f.value*f.change/100,0);
+    return `
+    <div class="card">
+      <h2>💰 存钱计划 <span class="tag">目标 <input id="goal-input" class="goal-in" type="number" value="${state.money.goal}" onchange="setGoal(this.value)"/></span><button class="btn ghost sm" onclick="resetSavings()">清零</button></h2>
+      <div class="grid g3">
+        <div class="stat"><div class="k">已存</div><div class="v">¥${state.money.saved.toLocaleString()}</div></div>
+        <div class="stat"><div class="k">进度</div><div class="v">${p}<small>%</small></div></div>
+        <div class="stat"><div class="k">还差</div><div class="v">¥${(state.money.goal-state.money.saved).toLocaleString()}</div></div>
+      </div>
+      <div class="progress"><i style="width:${p}%"></i></div>
+      <div class="add" style="margin-top:14px">
+        <select id="m-type"><option value="in">＋存入</option><option value="out">－支出</option></select>
+        <input id="m-amt" type="number" placeholder="金额"/>
+        <input id="m-cat" list="money-cats" placeholder="类别"/>
+        <datalist id="money-cats">
+          <option value="饮食"></option>
+          <option value="出行费用"></option>
+          <option value="生活开销"></option>
+          <option value="购物"></option>
+          <option value="娱乐"></option>
+          <option value="居家"></option>
+          <option value="医疗"></option>
+          <option value="学习"></option>
+          <option value="人情"></option>
+          <option value="工资"></option>
+          <option value="兼职"></option>
+          <option value="基金"></option>
+          <option value="转账"></option>
+          <option value="红包"></option>
+          <option value="其他"></option>
+        </datalist>
+        <button class="mini" onclick="clearMoneyForm()">清零</button>
+        <button class="btn" onclick="addMoney()">记录</button>
+      </div>
+      ${state.money.records.map((r,i)=>`
+        <div class="row"><div class="txt">${esc(r.cat)}<div class="meta">${esc(r.note||'')}</div></div>
+          <div class="meta">${r.date}</div>
+          <div class="${r.type==='in'?'up':'down'}" style="font-weight:600;min-width:74px;text-align:right">
+            ${r.type==='in'?'+':'-'}${r.amount.toLocaleString()}</div>
+          <div class="del" onclick="delMoney(${i})">删</div></div>`).join("")}
+    </div>
+    <div class="card">
+      <h2>📈 基金持仓 <span class="tag">总值 ¥${fundTotal.toLocaleString()}</span></h2>
+      <div class="row"><div class="txt"><b>持仓总市值</b></div>
+        <div class="${fundChg>=0?'up':'down'}" style="font-weight:600">${fundChg>=0?'+':''}¥${Math.round(fundChg).toLocaleString()} 今日</div></div>
+      ${state.funds.map((f,i)=>`
+        <div class="row"><div class="txt"><b>${esc(f.name)}</b><div class="meta">${f.code}</div></div>
+          <div style="text-align:right"><div class="v" style="font-size:16px">¥${f.value.toLocaleString()}</div>
+          <div class="${f.change>=0?'up':'down'}" style="font-size:12px">${f.change>=0?'+':''}${f.change}%</div></div>
+          <div class="del" onclick="delFund(${i})">删除</div></div>`).join("")}
+      ${state.funds.length?"":'<div class="empty">还没有基金，下面加一只</div>'}
+      <div class="add" style="margin-top:12px">
+        <input id="f-name" placeholder="基金名"/>
+        <input id="f-code" placeholder="代码"/>
+        <input id="f-val" type="number" placeholder="市值"/>
+        <button class="btn" onclick="addFund()">加基金</button>
+      </div>
+    </div>`;
+  },
+
+  notes:()=>{
+    return `
+    <div class="card">
+      <h2>🗒️ 便签墙</h2>
+      <div class="add"><input id="n-in" placeholder="写一张便签，回车添加"/><button class="btn" onclick="addNote()">添加</button></div>
+      <div class="notes" style="margin-top:14px">
+        ${state.notes.slice().reverse().map(n=>{
+          const ts=n.ts||Date.now();
+          return `<div class="diary" style="background:${n.color}">
+            <div class="diary-head">
+              <div class="diary-av" style="background:rgba(255,255,255,.6)">🗒️</div>
+              <div><div class="diary-name">便签</div>
+                <div class="diary-sub" style="color:#6b5b3a">${n.t&&!/^\d{2}-\d{2}$/.test(n.t)?esc(n.t):'随手记'}</div></div>
+              <div class="diary-time">${fmtDate(ts)}</div>
+            </div>
+            <div class="diary-body">${esc(n.text)}</div>
+            <div class="diary-foot" style="border-color:rgba(0,0,0,.08)"><span class="clk">🕒 ${fmtTime(ts)}</span><span class="x" onclick="delNote(${n.id})">删除</span></div>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`;
+  },
+
+  whisper:()=>`
+    <div class="card">
+      <h2>🌳 树洞 <span class="tag">只对自己说的话</span></h2>
+      <div class="add"><input id="w-in" placeholder="说点什么……"/><button class="btn" onclick="addWhisper()">写下</button></div>
+      ${state.whisper.map((x,i)=>{
+        const item = typeof x==="string" ? {text:x,ts:Date.now()} : x;
+        return `<div class="diary">
+          <div class="diary-head">
+            <div class="diary-av">🌿</div>
+            <div><div class="diary-name">树洞</div>
+              <div class="diary-sub">只有自己看见</div></div>
+            <div class="diary-time">${fmtDate(item.ts)}</div>
+          </div>
+          <div class="diary-body">${esc(item.text)}</div>
+          <div class="diary-foot"><span class="clk">🕒 ${fmtTime(item.ts)}</span><span class="x" onclick="delWhisper(${i})">删除</span></div>
+        </div>`;
+      }).join("")}
+    </div>`,
+};
+
+/* ---------------- 交互 ---------------- */
+function uid(){return Date.now()}
+function bind(){
+  const ti=$("#t-in"); if(ti) ti.onkeydown=e=>{if(e.key==="Enter")addTask()};
+  const ni=$("#n-in"); if(ni) ni.onkeydown=e=>{if(e.key==="Enter")addNote()};
+  const ii=$("#i-in"); if(ii) ii.onkeydown=e=>{if(e.key==="Enter")addIdea()};
+  const wi=$("#w-in"); if(wi) wi.onkeydown=e=>{if(e.key==="Enter")addWhisper()};
+}
+function addTask(){const v=$("#t-in").value.trim();if(!v)return;state.tasks.push({id:uid(),text:v,done:false});save();render()}
+function toggleTask(id){const t=state.tasks.find(x=>x.id===id);t.done=!t.done;save();render()}
+function delTask(id){state.tasks=state.tasks.filter(x=>x.id!==id);save();render()}
+function addHabit(){const v=$("#h-in").value.trim();if(!v)return;state.habit.push({name:v,week:[0,0,0,0,0,0,0]});save();render()}
+function delHabit(i){state.habit.splice(i,1);save();render()}
+function toggleHabit(i,j){state.habit[i].week[j]=state.habit[i].week[j]?0:1;save();render()}
+function logMood(e,l){state._lastMood={emoji:e,label:l};save();render()}
+function saveMoodNote(){const note=$("#m-note").value.trim();const last=state._lastMood||{emoji:"🙂",label:"一般"};
+  state.mood.push({id:uid(),emoji:last.emoji,label:last.label,note,ts:Date.now()});save();render();
+  const i=$("#m-note"); if(i) i.value="";}
+function addIdea(){const v=$("#i-in").value.trim();if(!v)return;state.idea.unshift(v);save();render()}
+function delIdea(i){state.idea.splice(i,1);save();render()}
+function addMoney(){const type=$("#m-type").value;const amt=+$("#m-amt").value;if(!amt)return;
+  const cat=$("#m-cat").value.trim()||(type==="in"?"存入":"支出");
+  state.money.records.unshift({date:new Date().toISOString().slice(5,10),type,cat,amount:amt,note:""});
+  state.money.saved+=type==="in"?amt:-amt;save();render()}
+function delMoney(i){const r=state.money.records[i];state.money.saved+=r.type==="in"?-r.amount:r.amount;
+  state.money.records.splice(i,1);save();render()}
+function addFund(){const name=$("#f-name").value.trim();const code=$("#f-code").value.trim();const val=+$("#f-val").value;
+  if(!name||!val) return; state.funds.push({name,code,value:val,change:0}); save(); render();}
+function delFund(i){ state.funds.splice(i,1); save(); render(); }
+function clearMoneyForm(){ const a=$("#m-amt"); if(a)a.value=""; const c=$("#m-cat"); if(c)c.value=""; if(a)a.focus(); }
+function resetSavings(){ if(!confirm("确定把已存金额清0吗？目标金额会保留。")) return; state.money.saved=0; save(); render(); }
+function setGoal(v){ const n=Math.max(0, Math.round(+v||0)); state.money.goal=n; save(); render(); }
+function setProj(name,st){const p=state.project.find(x=>x.name===name);p.status=st;save();render()}
+function addNote(){const v=$("#n-in").value.trim();if(!v)return;
+  const cs=["#FFF2B8","#D6E8C8","#FBD3D3","#D3E4FB","#EAD9F2","#FCE4C8"];
+  state.notes.push({id:uid(),color:cs[Math.floor(Math.random()*cs.length)],text:v,ts:Date.now()});save();render();
+  const i=$("#n-in"); if(i) i.value="";}
+function delNote(id){state.notes=state.notes.filter(x=>x.id!==id);save();render()}
+function delMood(id,idx){if(id) state.mood=state.mood.filter(x=>x.id!==id); else state.mood.splice(idx,1); save();render()}
+function addWhisper(){const v=$("#w-in").value.trim();if(!v)return;
+  state.whisper.unshift({text:v,ts:Date.now()});save();render();
+  const i=$("#w-in"); if(i) i.value="";}
+function delWhisper(i){state.whisper.splice(i,1);save();render()}
+
+/* ---------------- 账户 / Supabase 云同步 ---------------- */
+function toggleModal(){ $("#accountModal").classList.toggle("on"); renderModal(); }
+
+function renderAccount(){
+  const btn=$("#accountBtn"); const cfg=getCfg();
+  if(user) btn.innerHTML=`<button class="account-btn" onclick="toggleModal()"><span class="avatar">${esc((user.email||'?')[0].toUpperCase())}</span><span class="sync-dot"></span>已同步</button>`;
+  else if(cfg&&cfg.url) btn.innerHTML=`<button class="account-btn" onclick="toggleModal()"><span class="sync-dot off"></span>未登录</button>`;
+  else btn.innerHTML=`<button class="account-btn" onclick="toggleModal()">📱 本地模式</button>`;
+  renderModal();
+}
+
+function renderModal(){
+  const m=$("#accountModal"); if(!m) return;
+  const cfg=getCfg();
+  let h=`<div class="box"><span class="close" onclick="toggleModal()">×</span>`;
+  if(user){
+    h+=`<h3>☁️ 云端已连接</h3>
+      <div class="tip">账号：<b>${esc(user.email)}</b></div>
+      <div class="row2"><button class="btn" onclick="pullCloud(true)">立即同步</button><button class="btn ghost" onclick="logout()">退出</button></div>
+      <div class="tip">数据实时存到云端，换设备登录同一账号即可恢复。别人通过分享链接也能安装这个 App，各自数据独立。</div>`;
+  } else if(cfg&&cfg.url){
+    h+=`<h3>登录云端</h3>
+      <div class="field"><label>邮箱</label><input id="a-email" placeholder="you@example.com"/></div>
+      <div class="field"><label>密码</label><input id="a-pwd" type="password" placeholder="密码"/></div>
+      <div class="err" id="a-err"></div>
+      <div class="row2"><button class="btn" onclick="login()">登录</button><button class="btn ghost" onclick="signup()">注册</button></div>
+      <div class="row2"><button class="btn ghost" onclick="editCfg()">改配置</button></div>
+      <div class="tip">没有账号点「注册」。若收不到验证邮件，请在 Supabase 后台 Authentication → Providers 关闭 Email 确认。</div>`;
+  } else {
+    h+=`<h3>📱 本地模式</h3>
+      <div class="tip">当前数据只存在这台设备，打开即用、无需注册。想要多设备同步时再开启云同步。</div>
+      <div class="row2"><button class="btn ghost" onclick="toggleModal()">继续本地使用</button><button class="btn" onclick="showCfg()">开启云同步</button></div>
+      <div id="cfg-box" style="display:none;margin-top:14px">
+        <div class="field"><label>Supabase 项目 URL</label><input id="c-url" placeholder="https://xxxx.supabase.co"/></div>
+        <div class="field"><label>Anon Key</label><input id="c-key" placeholder="eyJ..."/></div>
+        <div class="err" id="c-err"></div>
+        <button class="btn" onclick="saveCfg()">保存并连接</button>
+        <div class="tip">免费建项目：<a href="https://supabase.com" target="_blank">supabase.com</a> → 复制 Project URL 与 Anon Key（Project Settings → API），并在 SQL Editor 执行 supabase-schema.sql。</div>
+      </div>`;
+  }
+  h+=`</div>`; m.innerHTML=h;
+}
+
+function saveCfg(){
+  const url=$("#c-url").value.trim(), key=$("#c-key").value.trim();
+  if(!url||!key){ $("#c-err").textContent="URL 和 Key 都要填"; return; }
+  localStorage.setItem(CFG_KEY, JSON.stringify({url,key}));
+  initSb(); renderAccount();
+}
+function editCfg(){ localStorage.removeItem(CFG_KEY); sb=null; user=null; renderAccount(); }
+function showCfg(){ const b=document.getElementById("cfg-box"); if(b) b.style.display="block"; }
+
+function initSb(){
+  const cfg=getCfg();
+  if(!window.supabase || !cfg || !cfg.url || !cfg.key){ renderAccount(); return; }
+  try{
+    sb = window.supabase.createClient(cfg.url, cfg.key);
+    sb.auth.getUser().then(({data})=>{ user=data.user||null; if(user) pullCloud(false); else renderAccount(); });
+    sb.auth.onAuthStateChange((_e,s)=>{ user=s&&s.user||null; if(user) pullCloud(false); renderAccount(); });
+    renderAccount();
+  }catch(e){ renderAccount(); }
+}
+
+async function login(){
+  const email=$("#a-email").value.trim(), pwd=$("#a-pwd").value;
+  const {error}=await sb.auth.signInWithPassword({email,password:pwd});
+  if(error) $("#a-err").textContent=error.message;
+}
+async function signup(){
+  const email=$("#a-email").value.trim(), pwd=$("#a-pwd").value;
+  const {error}=await sb.auth.signUp({email,password:pwd});
+  if(error) $("#a-err").textContent=error.message;
+  else $("#a-err").textContent="注册成功，请查收验证邮件（或联系管理员关闭确认）后登录。";
+}
+async function logout(){ await sb.auth.signOut(); user=null; renderAccount(); }
+
+async function pullCloud(manual){
+  if(!sb||!user) return;
+  const {data,error}=await sb.from("workbench_state").select("data").eq("user_id",user.id).maybeSingle();
+  if(error) return;
+  if(data && data.data){ state=data.data; save_local(); render(); }
+  else { save(); } // 云端还没有 → 把本地推上去
+  if(manual) renderAccount();
+}
+
+/* ---------------- 启动 ---------------- */
+(function init(){
+  const d=new Date();
+  const wk=["周日","周一","周二","周三","周四","周五","周六"][d.getDay()];
+  $("#date").textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${wk}`;
+  const h=d.getHours();
+  $("#hello").textContent = h<11?"早上好 ☀️":h<18?"下午好 🌿":"晚上好 🌙";
+  buildNav(); render(); renderAccount(); initSb();
+  if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
+})();
+</script>
+</body>
+</html>

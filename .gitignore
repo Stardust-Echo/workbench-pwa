@@ -1,0 +1,14 @@
+node_modules/
+android/.gradle/
+android/app/build/
+android/build/
+*.iml
+.idea/
+.DS_Store
+android-build/
+*.zip
+pwa_home.html
+pwa_app.js
+apk_req.json
+apk_hdr.txt
+apk_resp.bin
