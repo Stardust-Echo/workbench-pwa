@@ -211,6 +211,23 @@
   .sheet-row:active{background:#FBF7EF}
   .sheet-row .ic{font-size:22px; width:26px; text-align:center}
   .sheet-row.active{color:var(--green-d); font-weight:600}
+  .sheet-row.divider{border-top:1px solid var(--line); margin-top:6px}
+
+  /* 自定义底部栏 */
+  .tab-edit-row{display:flex; align-items:center; gap:12px; padding:13px 14px; border-radius:12px; cursor:pointer; user-select:none}
+  .tab-edit-row.off{opacity:.5}
+  .tab-edit-row .ic{font-size:21px; width:26px; text-align:center}
+  .tab-edit-row .name{flex:1; font-size:15px; color:var(--ink)}
+  .tab-edit-row .toggle{width:42px; height:24px; border-radius:13px; background:#D8D2C7; position:relative; transition:.2s; flex:0 0 auto}
+  .tab-edit-row .toggle.on{background:var(--green)}
+  .tab-edit-row .toggle::after{content:""; position:absolute; top:2px; left:2px; width:20px; height:20px; background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .tab-edit-row .toggle.on::after{left:20px}
+  .tab-edit-row .order{display:flex; flex-direction:column; gap:3px; margin-left:4px; flex:0 0 auto}
+  .tab-edit-row .order button{width:26px; height:18px; border:1px solid var(--line); background:#FBF7EF; border-radius:5px; font-size:10px; color:var(--muted); cursor:pointer; padding:0; font-family:inherit; line-height:1}
+  .tab-edit-row .order button:active{background:var(--green); color:#fff; border-color:var(--green)}
+  .tab-edit-row .order button:disabled{opacity:.35; cursor:not-allowed}
+  .tab-edit-save{display:block; margin:14px auto 6px; padding:10px 32px; background:var(--green); color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer; font-family:inherit}
+  .tab-edit-hint{font-size:12px; color:var(--muted); text-align:center; padding:2px 16px 4px}
 </style>
 </head>
 <body>
@@ -237,6 +254,15 @@
     <div class="sheet-grab"></div>
     <div class="sheet-title">全部模块</div>
     <div id="sheetList"></div>
+  </div>
+</div>
+<div class="sheet-mask" id="editMask" onclick="if(event.target===this)closeEdit()">
+  <div class="sheet">
+    <div class="sheet-grab"></div>
+    <div class="sheet-title">自定义底部栏</div>
+    <div class="tab-edit-hint">点行切换"显示/隐藏"，▲▼ 调整顺序</div>
+    <div id="editList"></div>
+    <button class="tab-edit-save" onclick="saveTabEdit()">完成</button>
   </div>
 </div>
 <div class="modal" id="accountModal" onclick="if(event.target===this)toggleModal()"></div>
@@ -269,6 +295,7 @@ function defaultState(){ return {
   tasks:[{id:1,text:"整理本周工作台模块",done:false},{id:2,text:"读完《纳瓦尔宝典》第3章",done:true},{id:3,text:"给基金账户做一次再平衡",done:false}],
   habit:[{id:1,name:"早起 7:00",week:[1,1,0,1,1,0,0]},{id:2,name:"喝水 2L",week:[1,1,1,0,1,0,1]},{id:3,name:"阅读 30 分钟",week:[1,0,1,1,0,1,0]}],
   habitTaskDate:null,
+  tabOrder:["tasks","habit","mood","money","notes"],
   mood:[],
   read:[{title:"纳瓦尔宝典",author:"埃里克·乔根森",progress:62,status:"在读"},{title:"置身事内",author:"兰小欢",progress:100,status:"已读"},{title:"事实",author:"汉斯·罗斯林",progress:20,status:"在读"}],
   fit:[{date:"08-02",type:"力量",note:"胸 + 三头，45min"},{date:"08-01",type:"有氧",note:"跑步 5km"}],
@@ -317,9 +344,12 @@ const PRIMARY = ["tasks","habit","mood","money","notes"];
 function buildNav(){
   $("#nav").innerHTML = MODULES.map(m=>
     `<div class="nav-item ${m.id===current?'active':''}" data-m="${m.id}"><span class="ic">${m.ic}</span>${m.name}</div>`).join("");
+  const order = (state.tabOrder && state.tabOrder.length) ? state.tabOrder : PRIMARY;
+  const orderSet = new Set(order);
+  const moreOn = !orderSet.has(current);
   $("#tabbar").innerHTML =
-    PRIMARY.map(m=>`<div class="tab ${m===current?'on':''}" data-m="${m}"><span class="ic">${MODULES.find(x=>x.id===m).ic}</span>${MODULES.find(x=>x.id===m).name}</div>`).join("")
-    + `<div class="tab ${PRIMARY.includes(current)?'':'on'}" data-m="__more"><span class="ic">☰</span>更多</div>`;
+    order.map(id=>{ const m=MODULES.find(x=>x.id===id); return m?`<div class="tab ${id===current?'on':''}" data-m="${id}"><span class="ic">${m.ic}</span>${m.name}</div>`:""; }).join("")
+    + `<div class="tab ${moreOn?'on':''}" data-m="__more"><span class="ic">☰</span>更多</div>`;
   document.querySelectorAll(".nav-item").forEach(el=>el.onclick=()=>{current=el.dataset.m;buildNav();render();});
   document.querySelectorAll(".tab").forEach(el=>el.onclick=()=>{
     if(el.dataset.m==="__more"){ openSheet(); return; }
@@ -327,12 +357,75 @@ function buildNav(){
   });
 }
 function renderSheet(){
-  $("#sheetList").innerHTML = MODULES.map(m=>
-    `<div class="sheet-row ${m.id===current?'active':''}" onclick="selectModule('${m.id}')"><span class="ic">${m.ic}</span>${m.name}</div>`).join("");
+  const order = (state.tabOrder && state.tabOrder.length) ? state.tabOrder : PRIMARY;
+  const rest = MODULES.filter(m=>!order.includes(m.id));
+  $("#sheetList").innerHTML =
+    (rest.length
+      ? rest.map(m=>`<div class="sheet-row ${m.id===current?'active':''}" onclick="selectModule('${m.id}')"><span class="ic">${m.ic}</span>${m.name}</div>`).join("")
+      : '<div class="sheet-row" style="color:var(--muted);cursor:default;font-size:13px;padding:12px 16px">已全部固定到底部栏</div>')
+    + `<div class="sheet-row divider" onclick="closeSheet();openEdit()" style="color:var(--green-d);font-weight:600"><span class="ic">✏️</span>自定义底部栏</div>`;
 }
 function openSheet(){ renderSheet(); $("#sheetMask").classList.add("on"); }
 function closeSheet(){ $("#sheetMask").classList.remove("on"); }
 function selectModule(id){ closeSheet(); current=id; buildNav(); render(); }
+
+/* ----- 自定义底部栏（手机底部 Tab） ----- */
+function openEdit(){ renderEdit(); $("#editMask").classList.add("on"); }
+function closeEdit(){ $("#editMask").classList.remove("on"); }
+function renderEdit(){
+  const order = (state.tabOrder && state.tabOrder.length) ? state.tabOrder : PRIMARY.slice();
+  state.tabOrder = order;
+  $("#editList").innerHTML = MODULES.map(m=>{
+    const idx = order.indexOf(m.id);
+    const on = idx>=0;
+    const arrows = on ? `<span class="order">
+      <button data-up="${m.id}" ${idx===0?'disabled':''}>▲</button>
+      <button data-down="${m.id}" ${idx===order.length-1?'disabled':''}>▼</button>
+    </span>` : '';
+    return `<div class="tab-edit-row ${on?'':'off'}" data-id="${m.id}">
+      <span class="ic">${m.ic}</span>
+      <span class="name">${m.name}</span>
+      <span class="toggle ${on?'on':''}" data-toggle="${m.id}"></span>
+      ${arrows}
+    </div>`;
+  }).join("");
+  $("#editList").querySelectorAll(".tab-edit-row").forEach(row=>{
+    row.onclick = e=>{
+      if(e.target.closest("[data-up]")||e.target.closest("[data-down]")) return;
+      toggleTab(row.dataset.id);
+    };
+  });
+  $("#editList").querySelectorAll("[data-toggle]").forEach(el=>{
+    el.onclick = e=>{ e.stopPropagation(); toggleTab(el.dataset.toggle); };
+  });
+  $("#editList").querySelectorAll("[data-up]").forEach(el=>{
+    el.onclick = e=>{ e.stopPropagation(); moveTab(el.dataset.up, -1); };
+  });
+  $("#editList").querySelectorAll("[data-down]").forEach(el=>{
+    el.onclick = e=>{ e.stopPropagation(); moveTab(el.dataset.down, 1); };
+  });
+}
+function toggleTab(id){
+  if(!state.tabOrder) state.tabOrder = PRIMARY.slice();
+  const i = state.tabOrder.indexOf(id);
+  if(i>=0) state.tabOrder.splice(i,1);
+  else state.tabOrder.push(id);
+  renderEdit();
+}
+function moveTab(id, dir){
+  if(!state.tabOrder) state.tabOrder = PRIMARY.slice();
+  const i = state.tabOrder.indexOf(id);
+  if(i<0) return;
+  const j = i+dir;
+  if(j<0||j>=state.tabOrder.length) return;
+  const x = state.tabOrder.splice(i,1)[0];
+  state.tabOrder.splice(j,0,x);
+  renderEdit();
+}
+function saveTabEdit(){
+  if(!state.tabOrder || !state.tabOrder.length) state.tabOrder = PRIMARY.slice();
+  save(); closeEdit(); buildNav();
+}
 
 function render(){
   const m = MODULES.find(x=>x.id===current);
