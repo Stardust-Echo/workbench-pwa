@@ -166,6 +166,14 @@
   .theme-dot:hover{transform:scale(1.08)}
   .theme-dot.on{outline:3px solid var(--ink);outline-offset:2px}
   .theme-custom{background:#fff;border-style:dashed;color:var(--muted)}
+  /* 设置模块 */
+  .set-sec{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+  .set-sec:first-of-type{border-top:none;padding-top:4px;margin-top:6px}
+  .set-t{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:12px}
+  .set-hint{font-size:12px;color:var(--muted);margin:10px 0 4px;line-height:1.6}
+  .pin-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .pin-chip{display:inline-flex;align-items:center;gap:6px;background:#FBF7EF;border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:13px;color:var(--ink)}
+  .pin-dot{width:10px;height:10px;border-radius:50%}
   .modal{position:fixed;inset:0;background:rgba(74,64,57,.35);display:none;place-items:center;z-index:50;padding:20px}
   .modal.on{display:grid}
   .modal .box{position:relative;background:#fff;border-radius:18px;padding:22px;width:100%;max-width:360px;box-shadow:var(--shadow)}
@@ -302,6 +310,7 @@ const MODULES = [
   {id:"money",   name:"记账理财", ic:"💰", color:"#D9A441"},
   {id:"notes",   name:"便签",     ic:"🗒️", color:"#9FC2E8"},
   {id:"whisper", name:"树洞",     ic:"🌳", color:"#A8C686"},
+  {id:"settings",name:"设置",     ic:"⚙️", color:"#B6AEA3"},
 ];
 
 /* ---------- 主题配色 ---------- */
@@ -315,6 +324,7 @@ const THEMES = [
   {key:"rose",   name:"玫瑰红", v:{green:"#E27B7B", greenD:"#CE6262", gold:"#E7B65A", bg:"#FBEEEE"}},
   {key:"ocean",  name:"深海蓝", v:{green:"#5B8FB0", greenD:"#4A7A98", gold:"#E7B65A", bg:"#EEF3F6"}},
 ];
+const BG_PRESETS = ["#FBF4E9","#F6F7F9","#F0F5FB","#FBF1F4","#EFF8F4","#F5F0FB","#FFFFFF","#F3F0E8"];
 const THEME_KEY = "qingchen-wb-theme";
 function loadTheme(){ try{return JSON.parse(localStorage.getItem(THEME_KEY))}catch(e){return null} }
 function saveThemeObj(o){ localStorage.setItem(THEME_KEY, JSON.stringify(o)); }
@@ -333,10 +343,18 @@ function applyTheme(v){
   r.setProperty("--bg", v.bg||"#FBF4E9");
   const mc=document.querySelector('meta[name=theme-color]'); if(mc) mc.setAttribute("content", v.bg||v.green);
 }
-function pickTheme(key){ const t=THEMES.find(x=>x.key===key); if(!t) return; curTheme={key, v:t.v}; applyTheme(t.v); saveThemeObj(curTheme); renderModal(); }
+function pickTheme(key){ const t=THEMES.find(x=>x.key===key); if(!t) return; curTheme={key, v:t.v}; applyTheme(t.v); saveThemeObj(curTheme); renderModal(); if(current==="settings") render(); }
 function openCustomTheme(){ const ce=document.getElementById("customTheme"); if(ce) ce.style.display="flex"; }
 function previewCustomTheme(){ const c=document.getElementById("themeColor").value; applyTheme({green:c, greenD:darken(c,.12), gold:mix(c,"#fff6e4",.5), bg:lighten(c,.9)}); }
-function applyCustomTheme(){ const c=document.getElementById("themeColor").value; const v={green:c, greenD:darken(c,.12), gold:mix(c,"#fff6e4",.5), bg:lighten(c,.9)}; curTheme={key:"custom", v}; applyTheme(v); saveThemeObj(curTheme); renderModal(); }
+function applyCustomTheme(){ const c=document.getElementById("themeColor").value; const v={green:c, greenD:darken(c,.12), gold:mix(c,"#fff6e4",.5), bg:lighten(c,.9)}; curTheme={key:"custom", v}; applyTheme(v); saveThemeObj(curTheme); renderModal(); if(current==="settings") render(); }
+// 设置模块内的自定义主题（独立 id，避免与账户弹窗冲突）
+function setOpenCustom(){ const e=document.getElementById("setCustomTheme"); if(e) e.style.display="flex"; }
+function setPreviewCustom(){ const c=document.getElementById("setThemeColor").value; applyTheme({green:c, greenD:darken(c,.12), gold:mix(c,"#fff6e4",.5), bg:lighten(c,.9)}); }
+function setApplyCustom(){ const c=document.getElementById("setThemeColor").value; const v={green:c, greenD:darken(c,.12), gold:mix(c,"#fff6e4",.5), bg:lighten(c,.9)}; curTheme={key:"custom", v}; applyTheme(v); saveThemeObj(curTheme); if(current==="settings") render(); }
+// 背景颜色：与强调色独立存储
+const WB_BG = "qingchen-wb-bg";
+function loadBg(){ return localStorage.getItem(WB_BG)||""; }
+function setBg(c){ document.documentElement.style.setProperty("--bg", c); localStorage.setItem(WB_BG, c); const mc=document.querySelector('meta[name=theme-color]'); if(mc) mc.setAttribute("content", c); if(current==="settings") render(); }
 
 // 便签可选图标
 const NOTE_ICONS = ["🗒️","📝","✏️","📌","📎","💡","⭐","⚡","🔥","🎯","💰","📚","🎓","🚀","🌟","💪","❤️","🌈","☕","🍎","🏠","🛒","⚠️","✅","🔔","🎉","🌿","💻","📅","🧠"];
@@ -485,6 +503,7 @@ function moveTab(id, dir){
 function saveTabEdit(){
   if(!state.tabOrder || !state.tabOrder.length) state.tabOrder = PRIMARY.slice();
   save(); closeEdit(); buildNav();
+  if(current==="settings") render();
 }
 
 function render(){
@@ -716,6 +735,44 @@ const VIEWS = {
         </div>`;
       }).join("")}
     </div>`,
+
+  settings:()=>{
+    const order = (state.tabOrder && state.tabOrder.length) ? state.tabOrder : PRIMARY;
+    const pinned = order.map(id=>MODULES.find(x=>x.id===id)).filter(Boolean);
+    const bgSaved = loadBg();
+    return `
+    <div class="card">
+      <h2>⚙️ 设置</h2>
+
+      <div class="set-sec">
+        <div class="set-t">主题强调色</div>
+        <div class="theme-row">${THEMES.map(t=>`<button class="theme-dot${curTheme.key===t.key?' on':''}" title="${t.name}" style="background:${t.v.green}" onclick="pickTheme('${t.key}')"></button>`).join("")}
+          <button class="theme-dot theme-custom${curTheme.key==='custom'?' on':''}" title="自定义颜色" onclick="setOpenCustom()">+</button></div>
+        <div id="setCustomTheme" style="display:${curTheme.key==='custom'?'flex':'none'};margin-top:12px;align-items:center;gap:12px">
+          <input type="color" id="setThemeColor" value="${curTheme.key==='custom'?curTheme.v.green:'#8FBF6F'}" oninput="setPreviewCustom()" style="width:46px;height:40px;border:none;background:none;cursor:pointer;padding:0"/>
+          <button class="btn sm" onclick="setApplyCustom()">应用自定义色</button>
+        </div>
+      </div>
+
+      <div class="set-sec">
+        <div class="set-t">背景颜色</div>
+        <div class="theme-row">${BG_PRESETS.map(c=>`<button class="theme-dot${bgSaved===c?' on':''}" title="${c}" style="background:${c}" onclick="setBg('${c}')"></button>`).join("")}
+          <label class="theme-dot theme-custom" title="自定义背景" style="cursor:pointer;position:relative;overflow:hidden">
+            <span style="font-size:16px">🎨</span>
+            <input type="color" value="${bgSaved||'#FBF4E9'}" oninput="setBg(this.value)" style="position:absolute;inset:0;opacity:0;cursor:pointer;border:none;padding:0"/>
+          </label>
+        </div>
+        <div class="set-hint">选一个背景色调，或点 🎨 取任意颜色。强调色与背景色可分别设置，互不影响。</div>
+      </div>
+
+      <div class="set-sec">
+        <div class="set-t">主要功能区</div>
+        <div class="set-hint">固定到手机底部栏、或在「更多」里出现的模块。下方为当前已固定项，点按钮调整显示与顺序。</div>
+        <div class="pin-chips">${pinned.map(m=>`<span class="pin-chip"><span class="pin-dot" style="background:${m.color}"></span>${m.name}</span>`).join("")}</div>
+        <button class="btn" style="margin-top:12px" onclick="openEdit()">✏️ 自定义主要功能区</button>
+      </div>
+    </div>`;
+  },
 };
 
 /* ---------------- 交互 ---------------- */
@@ -887,6 +944,7 @@ async function pullCloud(manual){
   const h=d.getHours();
   $("#hello").textContent = h<11?"早上好 ☀️":h<18?"下午好 🌿":"晚上好 🌙";
   applyTheme(curTheme.v);
+  const savedBg = loadBg(); if(savedBg){ document.documentElement.style.setProperty("--bg", savedBg); const mc=document.querySelector('meta[name=theme-color]'); if(mc) mc.setAttribute("content", savedBg); }
   buildNav(); syncHabitTasks(); render(); renderAccount(); initSb();
   if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
   // 每 60 秒检测跨天：次日自动清掉旧习惯任务、刷新今日清单
