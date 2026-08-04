@@ -378,33 +378,39 @@
   .food-row .meta{color:var(--muted); font-size:13px; white-space:nowrap}
   .food-total{margin-top:10px; padding-top:8px; border-top:1px dashed var(--line); font-size:14px; text-align:right; color:var(--ink)}
 
-  /* ---------- 音乐歌词精选 ---------- */
-  /* 音乐推荐 */
-  .song-feat{border:1px solid var(--line); border-radius:16px; padding:16px; background:color-mix(in srgb, var(--gold) 12%, var(--card)); margin-bottom:14px}
-  .song-feat .sf-h{font-size:13px; color:var(--muted); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center}
-  .song-feat .sf-h span:last-child{cursor:pointer; color:var(--green-d)}
-  .song-feat .sf-card{display:flex; gap:12px; align-items:center}
-  .song-feat .sf-cover{width:64px; height:64px; border-radius:12px; object-fit:cover; flex:0 0 64px; background:var(--bg)}
-  .song-feat .sf-title{font-weight:600; font-size:16px}
-  .song-feat .sf-singer{font-size:13px; color:var(--muted); margin-top:2px}
-  .song-feat .sf-reason{font-size:13px; color:var(--ink); margin-top:6px; line-height:1.5}
-  .song-feat .btn.ghost{margin-top:12px; text-decoration:none}
-  .song-filters{display:flex; gap:8px; flex-wrap:wrap; margin:4px 0 10px}
-  .song-chip{font-size:13px; padding:5px 12px; border-radius:20px; border:1px solid var(--line); background:var(--bg); cursor:pointer; color:var(--muted); user-select:none}
-  .song-chip.on{background:var(--green); color:#fff; border-color:var(--green)}
-  .song-tabs{display:flex; gap:8px; margin:2px 0 12px}
-  .song-tab{flex:1; text-align:center; font-size:14px; padding:9px 0; border-radius:12px; border:1px solid var(--line); background:var(--bg); cursor:pointer; color:var(--muted); user-select:none}
-  .song-tab.on{background:color-mix(in srgb, var(--gold) 22%, var(--card)); color:var(--ink); border-color:var(--gold); font-weight:600}
-  .song-card{border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-top:10px; display:flex; gap:12px; align-items:flex-start}
-  .song-card .sc-cover{width:52px; height:52px; border-radius:10px; object-fit:cover; flex:0 0 52px; background:var(--bg); align-self:center}
+  /* ---------- 音乐推荐 ---------- */
+  .song-feat{position:relative; overflow:hidden; border:1px solid var(--line); border-radius:18px; padding:18px; background:linear-gradient(135deg, color-mix(in srgb, var(--gold) 18%, var(--card)), color-mix(in srgb, var(--green) 12%, var(--card))); margin-bottom:16px}
+  .song-feat .sf-note{position:absolute; right:-8px; top:-16px; font-size:98px; line-height:1; opacity:.07; pointer-events:none; user-select:none}
+  .song-feat .sf-h{font-size:13px; color:var(--muted); margin-bottom:13px; display:flex; justify-content:space-between; align-items:center; position:relative; z-index:1}
+  .song-feat .sf-h span:last-child{cursor:pointer; color:var(--green-d); font-weight:600}
+  .song-feat .sf-card{display:flex; gap:14px; align-items:center; position:relative; z-index:1}
+  .song-feat .sf-cover{width:64px; height:64px; border-radius:14px; object-fit:cover; flex:0 0 64px; background:var(--bg); box-shadow:0 4px 12px rgba(0,0,0,.08)}
+  .song-feat .sf-title{font-weight:700; font-size:17px; letter-spacing:.2px}
+  .song-feat .sf-singer{font-size:13px; color:var(--muted); margin-top:3px}
+  .song-feat .sf-reason{font-size:13px; color:var(--ink); margin-top:9px; line-height:1.65}
+  .song-feat .btn.ghost{margin-top:14px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-weight:600; position:relative; z-index:1; border-color:var(--green); color:var(--green-d)}
+  .song-filters{display:flex; gap:8px; flex-wrap:wrap; margin:4px 0 12px}
+  .song-chip{font-size:13px; padding:6px 13px; border-radius:20px; border:1px solid var(--line); background:var(--bg); cursor:pointer; color:var(--muted); user-select:none; transition:.15s}
+  .song-chip:active{transform:scale(.95)}
+  .song-chip.on{background:var(--green); color:#fff; border-color:var(--green); box-shadow:0 3px 8px color-mix(in srgb, var(--green) 35%, transparent)}
+  .song-tabs{display:flex; gap:8px; margin:2px 0 14px}
+  .song-tab{flex:1; text-align:center; font-size:14px; padding:10px 0; border-radius:12px; border:1px solid var(--line); background:var(--bg); cursor:pointer; color:var(--muted); user-select:none; transition:.15s}
+  .song-tab:active{transform:scale(.98)}
+  .song-tab.on{background:color-mix(in srgb, var(--gold) 24%, var(--card)); color:var(--ink); border-color:var(--gold); font-weight:600; box-shadow:0 3px 8px color-mix(in srgb, var(--gold) 25%, transparent)}
+  .song-card{border:1px solid var(--line); border-radius:16px; padding:13px 14px; margin-top:11px; display:flex; gap:13px; align-items:flex-start; background:var(--card); transition:.15s}
+  .song-card:active{transform:scale(.99)}
+  .song-card .sc-cover{width:54px; height:54px; border-radius:12px; object-fit:cover; flex:0 0 54px; background:var(--bg); align-self:center; box-shadow:0 3px 10px rgba(0,0,0,.07)}
   .song-card .sc-main{flex:1; min-width:0}
-  .song-card .sc-title{font-weight:600; font-size:15px}
-  .song-card .sc-singer{font-size:12px; color:var(--muted); margin-top:1px}
-  .song-card .sc-style{display:inline-block; font-size:11px; color:var(--green-d); background:color-mix(in srgb, var(--green) 14%, transparent); border-radius:10px; padding:1px 8px; margin-top:6px}
-  .song-card .sc-reason{font-size:13px; color:var(--ink); margin-top:6px; line-height:1.55; white-space:pre-wrap}
-  .song-card .sc-actions{display:flex; flex-direction:column; gap:6px; align-items:flex-end; justify-content:center; flex:0 0 auto}
-  .song-card .sc-play{font-size:12px; color:var(--green-d); text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:3px 9px; background:var(--bg)}
-  .song-card .sc-play:active{background:var(--green); color:#fff}
+  .song-card .sc-title{font-weight:700; font-size:15px}
+  .song-card .sc-singer{font-size:12px; color:var(--muted); margin-top:2px}
+  .song-card .sc-style{display:inline-block; font-size:11px; color:var(--green-d); background:color-mix(in srgb, var(--green) 14%, transparent); border-radius:10px; padding:2px 9px; margin-top:7px}
+  .song-card .sc-reason{font-size:13px; color:var(--ink); margin-top:7px; line-height:1.6; white-space:pre-wrap}
+  .song-card .sc-actions{display:flex; flex-direction:column; gap:7px; align-items:flex-end; justify-content:center; flex:0 0 auto}
+  .song-card .sc-play{font-size:12px; color:#fff; text-decoration:none; background:var(--green); border-radius:20px; padding:5px 14px; font-weight:600; white-space:nowrap; box-shadow:0 3px 8px color-mix(in srgb, var(--green) 30%, transparent)}
+  .song-card .sc-play:active{filter:brightness(.93)}
+  .cover-ph{display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; background:linear-gradient(135deg, hsl(var(--h),62%,60%), hsl(calc(var(--h) + 38),64%,50%)); text-shadow:0 1px 2px rgba(0,0,0,.18)}
+  .song-feat .sf-cover.cover-ph{font-size:26px}
+  .song-card .sc-cover.cover-ph{font-size:20px}
 
   /* ---------- 学习管理：名言名句小框 ---------- */
   .famous-box{background:color-mix(in srgb, var(--gold) 14%, transparent); border:1px solid var(--line);
@@ -508,8 +514,19 @@ const HOT_SONGS = [
   {title:"模特",singer:"李荣浩",style:"流行",lyric:"拼命想 show 却总是搞砸了，但这和我，并不是那么有关，真的。",url:"https://y.music.163.com/m/song?srctype=2&songId=28965746"},
 ];
 function songPlayUrl(s){
-  if(s.url) return s.url;
-  return "https://music.163.com/#/search/m/?s="+encodeURIComponent(s.title||"");
+  if(s && s.url) return s.url;
+  const q = (s && (s.title||s.name)) || "";
+  return "https://music.163.com/#/search/m/?s="+encodeURIComponent(q)+"&type=1";
+}
+function songHue(s){
+  let h=0; const t=String((s&&(s.title||s.name))||"♪");
+  for(let i=0;i<t.length;i++) h=(h*31+t.charCodeAt(i))%360;
+  return h;
+}
+function songCover(s, cls){
+  const initial=String((s&&(s.title||s.name))||"♪").trim().charAt(0)||"♪";
+  if(s && s.img) return `<img class="${cls}" src="${esc(s.img)}" alt=""/>`;
+  return `<div class="${cls} cover-ph" style="--h:${songHue(s)}">${esc(initial)}</div>`;
 }
 
 /* ---------- 名言名句（学习管理小框随机推荐） ---------- */
@@ -1095,10 +1112,11 @@ const VIEWS = {
       <h2>🎵 音乐推荐 <span class="tag">热门好歌 + 歌词</span></h2>
 
       <div class="song-feat">
+        <div class="sf-note">♪</div>
         <div class="sf-h"><span>🎧 今日推荐</span>${feat?'<span onclick="shuffleSong()">🎲 换一首</span>':''}</div>
         ${feat?`
           <div class="sf-card">
-            <div class="sf-cover"></div>
+            ${songCover(feat,"sf-cover")}
             <div style="min-width:0">
               <div class="sf-title">${esc(feat.title)} · ${esc(feat.singer||"")}</div>
               ${feat.lyric?`<div class="sf-reason">${esc(feat.lyric)}</div>`:''}
@@ -1140,7 +1158,7 @@ const VIEWS = {
         ${filt.length?filt.slice().reverse().map(s=>{
           const idx=mine.indexOf(s);
           return `<div class="song-card">
-            ${s.img?`<img class="sc-cover" src="${esc(s.img)}"/>`:`<div class="sc-cover"></div>`}
+            ${songCover(s,"sc-cover")}
             <div class="sc-main">
               <div class="sc-title">${esc(s.title||"无题")}</div>
               <div class="sc-singer">${esc(s.singer||"未知歌手")}</div>
@@ -1162,7 +1180,7 @@ const VIEWS = {
         ${filt.length?filt.map((h,i)=>{
           const idx=HOT_SONGS.indexOf(h);
           return `<div class="song-card">
-            <div class="sc-cover"></div>
+            ${songCover(h,"sc-cover")}
             <div class="sc-main">
               <div class="sc-title">${esc(h.title)} · ${esc(h.singer)}</div>
               ${h.style?`<span class="sc-style">${esc(h.style)}</span>`:''}
