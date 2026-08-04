@@ -538,9 +538,18 @@ let sb = null, user = null;
 
 function load(){ try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null} }
 function getCfg(){ try{return JSON.parse(localStorage.getItem(CFG_KEY))}catch(e){return null} }
+const USER_KEY = "qingchen-wb-user";
+function getUserName(){ return (localStorage.getItem(USER_KEY)||"").trim(); }
 function userName(){
-  const cfg=getCfg(); if(cfg && cfg.name){ const n=String(cfg.name).replace(/[^\u4e00-\u9fff\w]/g,'').trim(); if(n) return n; }
+  const n=getUserName(); if(n) return n;
+  const cfg=getCfg(); if(cfg && cfg.name){ const c=String(cfg.name).replace(/[^\u4e00-\u9fff\w]/g,'').trim(); if(c) return c; }
   return "阿莹";
+}
+function saveUserName(){
+  const el=document.getElementById("user-name");
+  if(el) localStorage.setItem(USER_KEY, el.value.trim());
+  const h=$("#hello"); if(h){ const d=new Date(); const g=d.getHours()<11?"早上好 ☀️":d.getHours()<18?"下午好 🌿":"晚上好 🌙"; h.textContent=`${g} ${userName()}`; }
+  if(current==="home") render();
 }
 function save_local(){ localStorage.setItem(KEY, JSON.stringify(state)) }
 
@@ -626,7 +635,7 @@ function renderSheet(){
 }
 function openSheet(){ renderSheet(); $("#sheetMask").classList.add("on"); }
 function closeSheet(){ $("#sheetMask").classList.remove("on"); }
-function selectModule(id){ closeSheet(); current=id; buildNav(); render(); }
+function selectModule(id){ closeSheet(); current=id; fitEditIdx=-1; buildNav(); render(); }
 
 /* ----- 自定义底部栏（手机底部 Tab） ----- */
 function openEdit(){ renderEdit(); $("#editMask").classList.add("on"); }
@@ -961,12 +970,42 @@ const VIEWS = {
         </div>`).join("")}
     </div>`,
 
-  fit:()=>`
+  fit:()=>{
+    const edit = (typeof fitEditIdx==="number" && fitEditIdx>=0 && state.fit[fitEditIdx]) ? state.fit[fitEditIdx] : null;
+    const dateV = edit? edit.date : dayKey();
+    const typeV = edit? edit.type : "";
+    const noteV = edit? edit.note : "";
+    return `
     <div class="card">
-      <h2>💪 健身记录</h2>
-      ${state.fit.length?state.fit.map(f=>`
-        <div class="row"><span style="font-size:18px">🏋️</span>
-          <div class="txt"><b>${f.type}</b> · ${esc(f.note)}</div><div class="meta">${f.date}</div></div>`).join(""):'<div class="empty">暂无记录</div>'}
+      <h2>💪 运动管理 <span class="tag">我的运动规律</span></h2>
+      <div class="add fit-add">
+        <input id="f-date" type="date" value="${esc(dateV)}" class="fit-date" style="width:auto"/>
+        <input id="f-type" placeholder="类型，如：力量/有氧/拉伸" value="${esc(typeV)}"/>
+        <input id="f-note" placeholder="内容，如：胸+三头 45min" value="${esc(noteV)}"/>
+        <button class="btn" onclick="addFit()">${edit?'更新':'添加'}</button>
+        ${edit?'<button class="btn ghost sm" onclick="cancelFitEdit()">取消</button>':''}
+      </div>
+      ${state.fit.length?state.fit.slice().reverse().map((f,i)=>{
+        const idx=state.fit.length-1-i;
+        const on = (typeof fitEditIdx==="number" && fitEditIdx===idx);
+        return `<div class="row ${on?'on':''}">
+          <span style="font-size:18px">🏋️</span>
+          <div class="txt"><b>${esc(f.type)}</b> · ${esc(f.note)}</div>
+          <div class="meta">${esc(f.date)}</div>
+          <div class="del" onclick="editFit(${idx})">编辑</div>
+          <div class="del" onclick="delFit(${idx})">删除</div>
+        </div>`;
+      }).join(""):'<div class="empty">还没有运动记录，添加你的第一条规律吧</div>'}
+    </div>`;
+  },
+
+  study:()=>`
+    <div class="card">
+      <h2>🎓 学习进度</h2>
+      ${state.study.map(c=>`
+        <div class="row"><div class="txt"><b>${esc(c.title)}</b></div>
+          <div style="width:140px"><div class="meta" style="text-align:right">${c.progress}%</div>
+          <div class="progress"><i style="width:${c.progress}%"></i></div></div></div>`).join("")}
     </div>`,
 
   study:()=>`
@@ -1110,6 +1149,15 @@ const VIEWS = {
       <h2>⚙️ 设置</h2>
 
       <div class="set-sec">
+        <div class="set-t">🙂 我的称呼</div>
+        <div class="add" style="margin:0">
+          <input id="set-name" value="${getUserName()}" placeholder="想被怎么称呼？如：阿莹" oninput="saveUserName()"/>
+          <button class="btn ghost sm" onclick="document.getElementById('set-name').value='';saveUserName()">重置</button>
+        </div>
+        <div class="set-hint">首页问候会显示这个称呼，留空则默认显示「阿莹」。</div>
+      </div>
+
+      <div class="set-sec">
         <div class="set-t">主题强调色</div>
         <div class="theme-row">${THEMES.map(t=>`<button class="theme-dot${curTheme.key===t.key?' on':''}" title="${t.name}" style="background:${t.v.green}" onclick="pickTheme('${t.key}')"></button>`).join("")}
           <button class="theme-dot theme-custom${curTheme.key==='custom'?' on':''}" title="自定义颜色" onclick="setOpenCustom()">+</button></div>
@@ -1153,6 +1201,22 @@ const VIEWS = {
 
 /* ---------------- 交互 ---------------- */
 function uid(){return Date.now()}
+let fitEditIdx = -1;
+function addFit(){
+  const type=($("#f-type").value||"").trim();
+  const note=($("#f-note").value||"").trim();
+  const date=($("#f-date").value||"").trim()||dayKey();
+  if(!type && !note) return;
+  if(typeof fitEditIdx==="number" && fitEditIdx>=0 && state.fit[fitEditIdx]){
+    const f=state.fit[fitEditIdx]; f.date=date; f.type=type; f.note=note;
+  } else {
+    state.fit.push({date, type, note});
+  }
+  fitEditIdx=-1; save(); render();
+}
+function delFit(i){ if(i<0||i>=state.fit.length) return; state.fit.splice(i,1); if(fitEditIdx===i) fitEditIdx=-1; save(); render(); }
+function editFit(i){ fitEditIdx=i; render(); const el=$("#f-type"); if(el) el.focus(); }
+function cancelFitEdit(){ fitEditIdx=-1; render(); }
 function bind(){
   const ti=$("#t-in"); if(ti) ti.onkeydown=e=>{if(e.key==="Enter")addTask()};
   const ni=$("#n-in"); if(ni) ni.onkeydown=e=>{if(e.key==="Enter")addNote()};
