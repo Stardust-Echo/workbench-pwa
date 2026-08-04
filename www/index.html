@@ -363,6 +363,34 @@
   /* 旧的 .card 内联样式会被首页自身覆盖 */
   .home-wrap{padding-bottom:6px}
   .home-sec-empty{text-align:center; color:var(--muted); font-size:13px; padding:14px 0}
+
+  /* ---------- 健康管理：消耗/摄入汇总 + 食材热量 ---------- */
+  .fit-add{flex-wrap:wrap}
+  .hl-summary{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:4px 0 6px}
+  .hl-cell{background:color-mix(in srgb, var(--green) 7%, transparent); border-radius:12px; padding:10px 8px; text-align:center}
+  .hl-cell .hl-num{font-size:18px; font-weight:700; color:var(--green-d)}
+  .hl-cell .hl-lab{font-size:11px; color:var(--muted); margin-top:2px}
+  .sub-h{margin:16px 0 6px; font-size:14px; color:var(--ink); display:flex; align-items:center; gap:6px}
+  .food-list{margin-top:10px; display:flex; flex-direction:column; gap:8px}
+  .food-row{display:flex; align-items:center; gap:10px; font-size:14px}
+  .food-row .fi{font-size:17px}
+  .food-row .txt{flex:1; min-width:0}
+  .food-row .meta{color:var(--muted); font-size:13px; white-space:nowrap}
+  .food-total{margin-top:10px; padding-top:8px; border-top:1px dashed var(--line); font-size:14px; text-align:right; color:var(--ink)}
+
+  /* ---------- 音乐歌词精选 ---------- */
+  .lyric-card{border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-top:10px}
+  .lyric-card .lc-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
+  .lyric-card .lc-title{font-weight:600; font-size:15px}
+  .lyric-card .lc-singer{font-size:12px; color:var(--muted); margin-top:1px}
+  .lyric-card .lc-body{margin-top:8px; font-size:14px; color:var(--ink); line-height:1.6; white-space:pre-wrap}
+
+  /* ---------- 学习管理：名言名句小框 ---------- */
+  .famous-box{background:color-mix(in srgb, var(--gold) 14%, transparent); border:1px solid var(--line);
+    border-radius:14px; padding:16px 18px; margin-bottom:6px; text-align:center}
+  .famous-box .fb-q{font-size:16px; line-height:1.7; font-weight:500; color:var(--ink)}
+  .famous-box .fb-a{font-size:13px; color:var(--muted); margin-top:8px}
+  .famous-box .btn.ghost{margin-top:12px}
 </style>
 </head>
 <body>
@@ -408,9 +436,9 @@ const MODULES = [
   {id:"tasks",   name:"任务清单", ic:"📝", color:"#7FB3A3"},
   {id:"habit",   name:"习惯打卡", ic:"✅", color:"#E7B65A"},
   {id:"mood",    name:"心情记录", ic:"🌈", color:"#F4A6A6"},
-  {id:"idea",    name:"表达能",   ic:"💬", color:"#E7C24B"},
-  {id:"read",    name:"博客精选", ic:"🎙️", color:"#8FB6DD"},
-  {id:"fit",     name:"运动管理", ic:"💪", color:"#C9A0DC"},
+  {id:"idea",    name:"奇思妙想", ic:"💭", color:"#E7C24B"},
+  {id:"read",    name:"音乐歌词精选", ic:"🎵", color:"#8FB6DD"},
+  {id:"fit",     name:"健康管理", ic:"💪", color:"#C9A0DC"},
   {id:"study",   name:"学习管理", ic:"🎓", color:"#7FB3A3"},
   {id:"project", name:"项目管理", ic:"📁", color:"#E0936B"},
   {id:"money",   name:"记账理财", ic:"💰", color:"#D9A441"},
@@ -418,6 +446,37 @@ const MODULES = [
   {id:"whisper", name:"树洞",     ic:"🌳", color:"#A8C686"},
   {id:"settings",name:"设置",     ic:"⚙️", color:"#B6AEA3"},
 ];
+
+/* ---------- 食材热量表（千卡 / 100g，常见食物） ---------- */
+const FOOD_CAL = {
+  "米饭":116,"白粥":46,"馒头":223,"面条(煮)":110,"面包":265,"燕麦":367,
+  "鸡胸肉":133,"鸡蛋":144,"牛肉(瘦)":125,"猪肉(瘦)":143,"三文鱼":208,"虾":93,"豆腐":76,
+  "牛奶":54,"酸奶":72,"苹果":52,"香蕉":93,"橙子":47,"葡萄":43,"西瓜":30,
+  "西兰花":34,"菠菜":28,"土豆":77,"红薯":90,"胡萝卜":41,"番茄":18,"黄瓜":16,
+  "花生":567,"核桃":654,"巧克力":546,"可乐":43,"啤酒":43,"食用油":899,"白砂糖":387
+};
+
+/* ---------- 名言名句（学习管理小框随机推荐） ---------- */
+const FAMOUS = [
+  {t:"学而不思则罔，思而不学则殆。", a:"《论语》"},
+  {t:"吾生也有涯，而知也无涯。", a:"庄子"},
+  {t:"路漫漫其修远兮，吾将上下而求索。", a:"屈原"},
+  {t:"纸上得来终觉浅，绝知此事要躬行。", a:"陆游"},
+  {t:"不积跬步，无以至千里；不积小流，无以成江海。", a:"荀子"},
+  {t:"博学之，审问之，慎思之，明辨之，笃行之。", a:"《中庸》"},
+  {t:"业精于勤，荒于嬉；行成于思，毁于随。", a:"韩愈"},
+  {t:"读书破万卷，下笔如有神。", a:"杜甫"},
+  {t:"知者不惑，仁者不忧，勇者不惧。", a:"《论语》"},
+  {t:"黑发不知勤学早，白首方悔读书迟。", a:"颜真卿"},
+  {t:"The only way to do great work is to love what you do.", a:"Steve Jobs"},
+  {t:"Stay hungry, stay foolish.", a:"Steve Jobs"},
+  {t:"Knowledge is power.", a:"Francis Bacon"},
+  {t:"学习永远不晚。", a:"高尔基"},
+  {t:"我学到的任何有价值的知识，都是由自学中得来的。", a:"达尔文"}
+];
+let famousIdx = 0;
+function famousQuote(){ return FAMOUS[famousIdx % FAMOUS.length]; }
+function shuffleFamous(){ famousIdx = Math.floor(Math.random()*FAMOUS.length); render(); }
 
 /* ---------- 主题配色 ---------- */
 const THEMES = [
@@ -565,8 +624,9 @@ function defaultState(){ return {
     {id:3, title:"季度复盘", date:"2026-09-30", emoji:"📝"}
   ],
   mood:[],
-  read:[{title:"纳瓦尔宝典",author:"埃里克·乔根森",progress:62,status:"在读"},{title:"置身事内",author:"兰小欢",progress:100,status:"已读"},{title:"事实",author:"汉斯·罗斯林",progress:20,status:"在读"}],
-  fit:[{date:"08-02",type:"力量",note:"胸 + 三头，45min"},{date:"08-01",type:"有氧",note:"跑步 5km"}],
+  read:[{title:"如愿",singer:"王菲",lyric:"你是遥遥的路，山野大雾里的灯。"},{title:"起风了",singer:"买辣椒也用券",lyric:"我曾难自拔于世界之大，也沉溺于其中梦话。"}],
+  fit:[{date:"08-02",type:"力量",note:"胸 + 三头，45min",kcal:320},{date:"08-01",type:"有氧",note:"跑步 5km",kcal:410}],
+  foodLog:[],
   study:[{title:"TypeScript 进阶",progress:40},{title:"系统设计入门",progress:15}],
   project:[{name:"工作台 PWA",status:"进行中",note:"manifest + service worker"},{name:"需求文档 v2",status:"待启动",note:"本周内产出"}],
   idea:["用 PWA 把工作台装进手机主屏","记账模块加基金净值曲线","便签支持语音速记"],
@@ -959,15 +1019,23 @@ const VIEWS = {
 
   read:()=>`
     <div class="card">
-      <h2>📚 阅读</h2>
-      ${state.read.map(b=>`
-        <div class="row">
-          <div class="txt"><b>${esc(b.title)}</b><div class="meta">${esc(b.author)} · ${b.status}</div></div>
-          <div style="width:120px">
-            <div class="meta" style="text-align:right">${b.progress}%</div>
-            <div class="progress"><i style="width:${b.progress}%"></i></div>
-          </div>
-        </div>`).join("")}
+      <h2>🎵 音乐歌词精选 <span class="tag">收藏喜欢的好词好句</span></h2>
+      <div class="add">
+        <input id="ly-title" placeholder="歌名 / 曲名" />
+        <input id="ly-singer" placeholder="歌手（选填）" />
+      </div>
+      <div class="add" style="margin-top:8px">
+        <input id="ly-lyric" placeholder="喜欢的歌词片段…" style="flex:1" />
+        <button class="btn" onclick="addLyric()">收藏</button>
+      </div>
+      ${state.read.length?state.read.slice().reverse().map((s,i)=>{
+        const idx=state.read.length-1-i;
+        return `<div class="lyric-card">
+          <div class="lc-top"><div><div class="lc-title">${esc(s.title||"无题")}</div><div class="lc-singer">${esc(s.singer||"")}</div></div>
+          <div class="del" onclick="delLyric(${idx})">删除</div></div>
+          <div class="lc-body">${esc(s.lyric||"")}</div>
+        </div>`;
+      }).join(""):'<div class="empty">还没有收藏的歌词，遇到喜欢的句子就存下来吧</div>'}
     </div>`,
 
   fit:()=>{
@@ -975,13 +1043,26 @@ const VIEWS = {
     const dateV = edit? edit.date : dayKey();
     const typeV = edit? edit.type : "";
     const noteV = edit? edit.note : "";
+    const kcalV = edit? (edit.kcal||"") : "";
+    const today = dayKey();
+    const burn = state.fit.filter(f=>f.date===today).reduce((s,f)=>s+(+f.kcal||0),0);
+    const food = (state.foodLog||[]);
+    const intake = food.reduce((s,f)=>s+(+f.kcal||0),0);
     return `
     <div class="card">
-      <h2>💪 运动管理 <span class="tag">我的运动规律</span></h2>
+      <h2>💪 健康管理 <span class="tag">运动 · 饮食</span></h2>
+      <div class="hl-summary">
+        <div class="hl-cell"><div class="hl-num">🔥 ${Math.round(burn)}</div><div class="hl-lab">今日运动消耗 (kcal)</div></div>
+        <div class="hl-cell"><div class="hl-num">🍽️ ${Math.round(intake)}</div><div class="hl-lab">食材摄入 (kcal)</div></div>
+        <div class="hl-cell"><div class="hl-num">${intake-burn>=0?'+':''}${Math.round(intake-burn)}</div><div class="hl-lab">净摄入 (kcal)</div></div>
+      </div>
+
+      <h3 class="sub-h">🏃 运动记录</h3>
       <div class="add fit-add">
         <input id="f-date" type="date" value="${esc(dateV)}" class="fit-date" style="width:auto"/>
-        <input id="f-type" placeholder="类型，如：力量/有氧/拉伸" value="${esc(typeV)}"/>
+        <input id="f-type" placeholder="类型，如：力量/有氧/跑步" value="${esc(typeV)}"/>
         <input id="f-note" placeholder="内容，如：胸+三头 45min" value="${esc(noteV)}"/>
+        <input id="f-kcal" type="number" placeholder="消耗kcal" value="${esc(kcalV)}" style="width:96px"/>
         <button class="btn" onclick="addFit()">${edit?'更新':'添加'}</button>
         ${edit?'<button class="btn ghost sm" onclick="cancelFitEdit()">取消</button>':''}
       </div>
@@ -991,31 +1072,63 @@ const VIEWS = {
         return `<div class="row ${on?'on':''}">
           <span style="font-size:18px">🏋️</span>
           <div class="txt"><b>${esc(f.type)}</b> · ${esc(f.note)}</div>
-          <div class="meta">${esc(f.date)}</div>
+          <div class="meta">${esc(f.date)}${f.kcal?` · 🔥${f.kcal}kcal`:''}</div>
           <div class="del" onclick="editFit(${idx})">编辑</div>
           <div class="del" onclick="delFit(${idx})">删除</div>
         </div>`;
       }).join(""):'<div class="empty">还没有运动记录，添加你的第一条规律吧</div>'}
+    </div>
+
+    <div class="card">
+      <h2>🥗 食材热量计算 <span class="tag">按 100g 热量估算</span></h2>
+      <div class="add fit-add">
+        <input id="fd-name" list="foodList" placeholder="食材，如：鸡胸肉" />
+        <datalist id="foodList">${Object.keys(FOOD_CAL).map(n=>`<option value="${n}">${FOOD_CAL[n]} kcal/100g</option>`).join("")}</datalist>
+        <input id="fd-g" type="number" placeholder="克数" style="width:84px"/>
+        <input id="fd-k" type="number" placeholder="千卡/100g(可选)" style="width:124px"/>
+        <button class="btn" onclick="addFood()">添加</button>
+      </div>
+      <div class="hint">输入食材名会自动匹配热量库；库里没有就留空，按你填的「千卡/100g」算。</div>
+      ${food.length?`
+        <div class="food-list">
+          ${food.map((f,i)=>`<div class="food-row">
+            <span class="fi">🍴</span>
+            <div class="txt"><b>${esc(f.name)}</b> · ${f.g}g${f.per100?` · ${f.per100}kcal/100g`:''}</div>
+            <div class="meta">🔥 ${Math.round(f.kcal)} kcal</div>
+            <div class="del" onclick="delFood(${i})">删除</div>
+          </div>`).join("")}
+        </div>
+        <div class="food-total">合计摄入：🔥 <b>${Math.round(intake)}</b> kcal</div>
+      `:'<div class="empty">添加食材，自动估算热量与总计</div>'}
     </div>`;
   },
 
-  study:()=>`
+  study:()=>{
+    const q = famousQuote();
+    return `
     <div class="card">
-      <h2>🎓 学习进度</h2>
-      ${state.study.map(c=>`
-        <div class="row"><div class="txt"><b>${esc(c.title)}</b></div>
-          <div style="width:140px"><div class="meta" style="text-align:right">${c.progress}%</div>
-          <div class="progress"><i style="width:${c.progress}%"></i></div></div></div>`).join("")}
-    </div>`,
+      <h2>🎓 学习管理</h2>
+      <div class="famous-box">
+        <div class="fb-q">“${esc(q.t)}”</div>
+        <div class="fb-a">— ${esc(q.a)}</div>
+        <button class="btn ghost sm" onclick="shuffleFamous()">🎲 换一句</button>
+      </div>
 
-  study:()=>`
-    <div class="card">
-      <h2>🎓 学习进度</h2>
-      ${state.study.map(c=>`
-        <div class="row"><div class="txt"><b>${esc(c.title)}</b></div>
+      <h3 class="sub-h">📚 学习进度</h3>
+      <div class="add">
+        <input id="s-title" placeholder="课程 / 书 / 技能" />
+        <input id="s-prog" type="number" placeholder="进度%" style="width:84px"/>
+        <button class="btn" onclick="addStudy()">添加</button>
+      </div>
+      ${state.study.length?state.study.map((c,i)=>`
+        <div class="row">
+          <div class="txt"><b>${esc(c.title)}</b></div>
           <div style="width:140px"><div class="meta" style="text-align:right">${c.progress}%</div>
-          <div class="progress"><i style="width:${c.progress}%"></i></div></div></div>`).join("")}
-    </div>`,
+          <div class="progress"><i style="width:${c.progress}%"></i></div></div>
+          <div class="del" onclick="delStudy(${i})">删除</div>
+        </div>`).join(""):'<div class="empty">还没有学习计划，加一门吧</div>'}
+    </div>`;
+  },
 
   project:()=>`
     <div class="card">
@@ -1028,9 +1141,9 @@ const VIEWS = {
 
   idea:()=>`
     <div class="card">
-      <h2>💡 想法收集</h2>
+      <h2>💭 奇思妙想</h2>
       <div class="add"><input id="i-in" placeholder="捕捉一个灵感"/><button class="btn" onclick="addIdea()">添加</button></div>
-      ${state.idea.map((x,i)=>`<div class="row"><span>💡</span><div class="txt">${esc(x)}</div><div class="del" onclick="delIdea(${i})">删除</div></div>`).join("")}
+      ${state.idea.map((x,i)=>`<div class="row"><span>💭</span><div class="txt">${esc(x)}</div><div class="del" onclick="delIdea(${i})">删除</div></div>`).join("")}
     </div>`,
 
   money:()=>{
@@ -1206,14 +1319,45 @@ function addFit(){
   const type=($("#f-type").value||"").trim();
   const note=($("#f-note").value||"").trim();
   const date=($("#f-date").value||"").trim()||dayKey();
+  const kcal=+$("#f-kcal").value||0;
   if(!type && !note) return;
   if(typeof fitEditIdx==="number" && fitEditIdx>=0 && state.fit[fitEditIdx]){
-    const f=state.fit[fitEditIdx]; f.date=date; f.type=type; f.note=note;
+    const f=state.fit[fitEditIdx]; f.date=date; f.type=type; f.note=note; f.kcal=kcal;
   } else {
-    state.fit.push({date, type, note});
+    state.fit.push({date, type, note, kcal});
   }
   fitEditIdx=-1; save(); render();
 }
+function addLyric(){
+  const title=($("#ly-title").value||"").trim();
+  const singer=($("#ly-singer").value||"").trim();
+  const lyric=($("#ly-lyric").value||"").trim();
+  if(!title && !lyric) return;
+  state.read.push({title, singer, lyric});
+  save(); render();
+}
+function delLyric(i){ if(i<0||i>=state.read.length) return; state.read.splice(i,1); save(); render(); }
+function addFood(){
+  const name=($("#fd-name").value||"").trim();
+  const g=parseFloat($("#fd-g").value)||0;
+  let per100=parseFloat($("#fd-k").value);
+  if(!name || !g) return;
+  if(!per100) per100 = FOOD_CAL[name] || 0;
+  const kcal = g*per100/100;
+  state.foodLog = state.foodLog||[];
+  state.foodLog.push({name, g, per100: per100||undefined, kcal});
+  save(); render();
+}
+function delFood(i){ if(!state.foodLog||i<0||i>=state.foodLog.length) return; state.foodLog.splice(i,1); save(); render(); }
+function addStudy(){
+  const title=($("#s-title").value||"").trim();
+  let prog=parseInt($("#s-prog").value)||0;
+  if(prog<0)prog=0; if(prog>100)prog=100;
+  if(!title) return;
+  state.study.push({title, progress:prog});
+  save(); render();
+}
+function delStudy(i){ if(i<0||i>=state.study.length) return; state.study.splice(i,1); save(); render(); }
 function delFit(i){ if(i<0||i>=state.fit.length) return; state.fit.splice(i,1); if(fitEditIdx===i) fitEditIdx=-1; save(); render(); }
 function editFit(i){ fitEditIdx=i; render(); const el=$("#f-type"); if(el) el.focus(); }
 function cancelFitEdit(){ fitEditIdx=-1; render(); }
@@ -1378,6 +1522,7 @@ async function pullCloud(manual){
 
 /* ---------------- 启动 ---------------- */
 (function init(){
+  famousIdx = Math.floor(Math.random()*FAMOUS.length);
   const d=new Date();
   const wk=W[d.getDay()];
   $("#date").textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 · ${wk} · 农历 ${approxLunar(d)}`;
