@@ -367,6 +367,46 @@
   .home-wrap{padding-bottom:6px}
   .home-sec-empty{text-align:center; color:var(--muted); font-size:13px; padding:14px 0}
 
+  /* ===== 首页趣味小窗（黄历/星座/生肖/梅花易数）===== */
+  .fun-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
+  .fun-card{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:13px 14px 16px; cursor:pointer; position:relative; overflow:hidden;
+    transition:transform .12s, box-shadow .12s;
+  }
+  .fun-card:active{transform:scale(.97)}
+  .fun-card .fc-glow{position:absolute; right:-16px; top:-18px; font-size:58px; opacity:.07; pointer-events:none; user-select:none}
+  .fun-card .fc-top{display:flex; align-items:center; gap:7px}
+  .fun-card .fc-ic{font-size:17px}
+  .fun-card .fc-name{font-size:13px; font-weight:600; color:var(--ink)}
+  .fun-card .fc-big{font-size:18px; font-weight:700; color:var(--green-d); margin-top:9px; letter-spacing:.5px}
+  .fun-card .fc-sub{font-size:12px; color:var(--muted); margin-top:4px; line-height:1.5;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  .fun-card .fc-go{position:absolute; right:11px; bottom:9px; font-size:11px; color:var(--green-d); opacity:.75}
+
+  /* 趣味详情弹窗 */
+  .fun-detail .fd-ico{font-size:34px; text-align:center; margin-bottom:4px}
+  .fun-detail .fd-title{text-align:center; font-size:18px; font-weight:700; margin-bottom:2px}
+  .fun-detail .fd-tag{text-align:center; font-size:12px; color:var(--muted); margin-bottom:14px}
+  .fun-detail .fd-line{display:flex; gap:10px; padding:9px 0; border-bottom:1px dashed var(--line); font-size:14px; line-height:1.55}
+  .fun-detail .fd-line:last-child{border-bottom:none}
+  .fun-detail .fd-k{flex:0 0 56px; color:var(--muted); font-size:13px}
+  .fun-detail .fd-v{flex:1; min-width:0}
+  .fun-detail .yi{color:var(--green-d); font-weight:600}
+  .fun-detail .ji{color:#D9695F; font-weight:600}
+  .fun-bars{margin:4px 0 2px}
+  .fun-bar{display:flex; align-items:center; gap:10px; margin-bottom:9px; font-size:13px}
+  .fun-bar .fb-k{flex:0 0 38px; color:var(--muted)}
+  .fun-bar .fb-track{flex:1; height:7px; background:color-mix(in srgb, var(--green) 12%, transparent); border-radius:99px; overflow:hidden}
+  .fun-bar .fb-track i{display:block; height:100%; background:linear-gradient(90deg, var(--green), var(--gold)); border-radius:99px}
+  .fun-bar .fb-num{flex:0 0 30px; text-align:right; font-weight:600; color:var(--green-d); font-feature-settings:"tnum"}
+  .fd-gua{font-size:28px; text-align:center; font-weight:700; letter-spacing:4px; color:var(--green-d); margin:4px 0 2px}
+  .fd-judge{text-align:center; font-size:14px; font-weight:700; margin-bottom:12px}
+  .fd-judge .good{color:var(--green-d)} .fd-judge .bad{color:#D9695F}
+  .fd-reroll{display:block; width:100%; margin-top:14px; padding:11px; background:var(--green); color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer}
+  .fd-reroll:active{background:var(--green-d)}
+  .fd-note{font-size:11px; color:var(--muted); text-align:center; margin-top:10px; line-height:1.5}
+
   /* ---------- 健康管理：消耗/摄入汇总 + 食材热量 ---------- */
   .fit-add{flex-wrap:wrap}
   .hl-summary{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:4px 0 6px}
@@ -471,6 +511,7 @@
   </div>
 </div>
 <div class="modal" id="accountModal" onclick="if(event.target===this)toggleModal()"></div>
+<div class="modal" id="funModal" onclick="if(event.target===this)closeFun()"></div>
 
 <script>
 const MODULES = [
@@ -675,6 +716,146 @@ function approxLunar(d){
   const dName=LUNAR_DAYS[t.day-1];
   return `${gzYear(t.year)}年 · ${zodiacOf(t.year)} · ${mName}${dName}`;
 }
+
+/* ===== 首页趣味小窗：黄历 / 星座 / 生肖 / 梅花易数 ===== */
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function shuffle(arr,seed){ const a=arr.slice(); const r=mulberry32(seed); for(let i=a.length-1;i>0;i--){ const j=Math.floor(r()*(i+1)); const x=a[i]; a[i]=a[j]; a[j]=x; } return a; }
+
+const YI_LIST=["出行","会友","签约","求财","开市","动土","祭祀","祈福","纳财","交易","安门","安床","理发","沐浴","入学","移徙","栽种","修造","立券","问名"];
+const JI_LIST=["词讼","安葬","破土","开仓","借贷","诉讼","远行","针灸","作灶","出货","乘船","赴任","分居","栽种","上梁","行丧","穿井","开渠"];
+function dailyAlmanac(d){
+  const seed=d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();
+  return { yi: shuffle(YI_LIST,seed).slice(0,3), ji: shuffle(JI_LIST,seed+777).slice(0,3) };
+}
+function gzDay(d){
+  const y=d.getFullYear(), m=d.getMonth()+1, day=d.getDate();
+  let yy=y, mm=m; if(mm<=2){ yy-=1; mm+=12; }
+  const A=Math.floor(yy/100), B=2-A+Math.floor(A/4);
+  const J=Math.floor(365.25*(yy+4716))+Math.floor(30.6001*(mm+1))+day+B-1524;
+  const idx=(((J+49)%60)+60)%60;
+  return { gz: HEAVENLY[idx%10]+EARTHLY[idx%12], zhi: EARTHLY[idx%12] };
+}
+const CHONG={ "子":"午","午":"子","丑":"未","未":"丑","寅":"申","申":"寅","卯":"酉","酉":"卯","辰":"戌","戌":"辰","巳":"亥","亥":"巳" };
+
+const SIGNS=[
+  {n:"摩羯",end:[1,19],el:"土",em:"♑",kw:"务实、自律"},
+  {n:"水瓶",end:[2,18],el:"风",em:"♒",kw:"独立、脑洞"},
+  {n:"双鱼",end:[3,20],el:"水",em:"♓",kw:"温柔、共情"},
+  {n:"白羊",end:[4,19],el:"火",em:"♈",kw:"热情、冲劲"},
+  {n:"金牛",end:[5,20],el:"土",em:"♉",kw:"稳重、靠谱"},
+  {n:"双子",end:[6,21],el:"风",em:"♊",kw:"机灵、善变"},
+  {n:"巨蟹",end:[7,22],el:"水",em:"♋",kw:"顾家、细腻"},
+  {n:"狮子",end:[8,22],el:"火",em:"♌",kw:"自信、大方"},
+  {n:"处女",end:[9,22],el:"土",em:"♍",kw:"细致、追求完美"},
+  {n:"天秤",end:[10,23],el:"风",em:"♎",kw:"平衡、审美"},
+  {n:"天蝎",end:[11,22],el:"水",em:"♏",kw:"深邃、专注"},
+  {n:"射手",end:[12,21],el:"火",em:"♐",kw:"自由、乐观"},
+  {n:"摩羯",end:[12,31],el:"土",em:"♑",kw:"务实、自律"}
+];
+function westernSign(m,d){ for(const s of SIGNS){ if(m<s.end[0]||(m===s.end[0]&&d<=s.end[1])) return s; } return SIGNS[0]; }
+
+const FORTUNE_SUMMARY=["整体平稳，按部就班最稳","贵人运不错，主动一点有惊喜","灵感在线，适合做关键决定","小确幸频发，留意身边好事","状态饱满，适合表达和推进","宜守不宜攻，少说多做更稳","人际顺遂，合作易成","财气小旺，但别冲动消费","思绪清晰，适合学习和复盘","情绪柔软，适合独处充电"];
+const FORTUNE_TIP=["先处理最难的那个任务，今天能轻松大半","给对方发个消息，关系会更近一步","想买的东西放购物车晾一晚再说","花十分钟整理桌面，效率悄悄翻倍","对自己好一点，这不是矫情","遇到卡点，换个角度就通了"];
+function dailyFortune(seedStr){
+  const d=dayKey(); let h=0; const s=seedStr+d; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0;
+  const r=mulberry32(h||1);
+  const overall=Math.floor(r()*41)+57;
+  const love=Math.floor(r()*41)+55, career=Math.floor(r()*41)+55, wealth=Math.floor(r()*41)+55;
+  const summary=FORTUNE_SUMMARY[Math.floor(r()*FORTUNE_SUMMARY.length)];
+  const tip=FORTUNE_TIP[Math.floor(r()*FORTUNE_TIP.length)];
+  return {overall, love, career, wealth, summary, tip};
+}
+const SX_KW={鼠:"机敏灵活",牛:"踏实肯干",虎:"果敢有魄力",兔:"温和细腻",龙:"大气有远见",蛇:"沉稳睿智",马:"自由奔放",羊:"温厚善良",猴:"灵巧善变",鸡:"精明讲效率",狗:"忠诚可靠",猪:"随和豁达"};
+
+const BAGUA={1:{n:"乾",el:"金",xiang:"刚健、开创"},2:{n:"兑",el:"金",xiang:"喜悦、口舌"},3:{n:"离",el:"火",xiang:"光明、附着"},4:{n:"震",el:"木",xiang:"震动、行动"},5:{n:"巽",el:"木",xiang:"顺入、谦逊"},6:{n:"坎",el:"水",xiang:"险陷、智慧"},7:{n:"艮",el:"土",xiang:"静止、止守"},8:{n:"坤",el:"土",xiang:"包容、承载"}};
+const GUA=[
+"乾为天","天泽履","天火同人","天雷无妄","天风姤","天水讼","天山遁","天地否",
+"泽天夬","兑为泽","泽火革","泽雷随","泽风大过","泽水困","泽山咸","泽地萃",
+"火天大有","火泽睽","离为火","火雷噬嗑","火风鼎","火水未济","火山旅","火地晋",
+"雷天大壮","雷泽归妹","雷火丰","震为雷","雷风恒","雷水解","雷山小过","雷地豫",
+"风天小畜","风泽中孚","风火家人","风雷益","巽为风","风水涣","风山渐","风地观",
+"水天需","水泽节","水火既济","水雷屯","水风井","坎为水","水山蹇","水地比",
+"山天大畜","山泽损","山火贲","山雷颐","山风蛊","山水蒙","艮为山","山地剥",
+"地天泰","地泽临","地火明夷","地雷复","地风升","地水师","地山谦","坤为地"
+];
+function calcGua(up,down){ return GUA[(up-1)*8+(down-1)]; }
+function guaLevel(idx){ const pool=["大吉","中吉","小吉","吉","平","凶"]; const r=mulberry32((idx*2654435761)>>>0); return pool[Math.floor(r()*pool.length)]; }
+function meihua(rng){
+  rng = rng || Math.random;
+  const a=Math.floor(rng()*1000), b=Math.floor(rng()*1000), c=Math.floor(rng()*1000);
+  const up=((a%8)+8)%8+1, down=((b%8)+8)%8+1, yao=(a+b+c)%6+1;
+  const name=calcGua(up,down);
+  const idx=(up-1)*8+(down-1);
+  const level=guaLevel(idx);
+  const u=BAGUA[up], d=BAGUA[down];
+  return {name, up, down, yao, level, uXi:u.xiang, dXi:d.xiang, uEl:u.el, dEl:d.el, uName:u.n, dName:d.n};
+}
+
+let meihuaCache=null;
+function openFun(key){
+  const now=new Date();
+  let html="";
+  if(key==="huangli"){
+    const alm=dailyAlmanac(now), gz=gzDay(now), lunar=approxLunar(now), chong=CHONG[gz.zhi]||"";
+    html=`<div class="box fun-detail"><span class="close" onclick="closeFun()">×</span>
+      <div class="fd-ico">📜</div>
+      <div class="fd-title">老黄历</div>
+      <div class="fd-tag">${lunar} · ${gz.gz}日</div>
+      <div class="fd-line"><div class="fd-k">宜</div><div class="fd-v yi">${alm.yi.join(" · ")}</div></div>
+      <div class="fd-line"><div class="fd-k">忌</div><div class="fd-v ji">${alm.ji.join(" · ")}</div></div>
+      <div class="fd-line"><div class="fd-k">冲煞</div><div class="fd-v">${gz.zhi}日冲${chong}${chong?"（煞"+chong+"方）":""} · 诸事斟酌而行</div></div>
+      <div class="fd-note">内容由日期推算，仅供娱乐参考 🌿</div>
+    </div>`;
+  } else if(key==="star"){
+    const s=westernSign(now.getMonth()+1, now.getDate()), f=dailyFortune("star-"+s.n);
+    html=`<div class="box fun-detail"><span class="close" onclick="closeFun()">×</span>
+      <div class="fd-ico">${s.em}</div>
+      <div class="fd-title">${s.n}座 · 今日星象</div>
+      <div class="fd-tag">${s.el}象 · ${s.kw}</div>
+      <div class="fd-line"><div class="fd-k">综合</div><div class="fd-v"><b>${f.overall}</b> 分 · ${f.summary}</div></div>
+      <div class="fun-bars">
+        <div class="fun-bar"><div class="fb-k">爱情</div><div class="fb-track"><i style="width:${f.love}%"></i></div><div class="fb-num">${f.love}</div></div>
+        <div class="fun-bar"><div class="fb-k">事业</div><div class="fb-track"><i style="width:${f.career}%"></i></div><div class="fb-num">${f.career}</div></div>
+        <div class="fun-bar"><div class="fb-k">财运</div><div class="fb-track"><i style="width:${f.wealth}%"></i></div><div class="fb-num">${f.wealth}</div></div>
+      </div>
+      <div class="fd-line"><div class="fd-k">建议</div><div class="fd-v">${f.tip}</div></div>
+      <div class="fd-note">每日随日期变化，纯属娱乐 🌟</div>
+    </div>`;
+  } else if(key==="shengxiao"){
+    const sx=zodiacOf(now.getFullYear()), f=dailyFortune("sx-"+sx);
+    html=`<div class="box fun-detail"><span class="close" onclick="closeFun()">×</span>
+      <div class="fd-ico">🐾</div>
+      <div class="fd-title">${sx}年 · 生肖运程</div>
+      <div class="fd-tag">${SX_KW[sx]||""}</div>
+      <div class="fd-line"><div class="fd-k">今日</div><div class="fd-v"><b>${f.overall}</b> 分 · ${f.summary}</div></div>
+      <div class="fun-bars">
+        <div class="fun-bar"><div class="fb-k">人缘</div><div class="fb-track"><i style="width:${f.love}%"></i></div><div class="fb-num">${f.love}</div></div>
+        <div class="fun-bar"><div class="fb-k">事业</div><div class="fb-track"><i style="width:${f.career}%"></i></div><div class="fb-num">${f.career}</div></div>
+        <div class="fun-bar"><div class="fb-k">财运</div><div class="fb-track"><i style="width:${f.wealth}%"></i></div><div class="fb-num">${f.wealth}</div></div>
+      </div>
+      <div class="fd-line"><div class="fd-k">建议</div><div class="fd-v">${f.tip}</div></div>
+      <div class="fd-note">每日随日期变化，纯属娱乐 🍀</div>
+    </div>`;
+  } else if(key==="meihua"){
+    if(!meihuaCache) meihuaCache=meihua();
+    const m=meihuaCache, bad=m.level==="凶";
+    html=`<div class="box fun-detail"><span class="close" onclick="closeFun()">×</span>
+      <div class="fd-ico">🔮</div>
+      <div class="fd-title">梅花易数</div>
+      <div class="fd-gua">${esc(m.name)}</div>
+      <div class="fd-judge ${bad?"bad":"good"}">${bad?"⚠ 凶":"✓ "+m.level}</div>
+      <div class="fd-line"><div class="fd-k">上卦</div><div class="fd-v">${m.uName}（${m.uEl}）· ${m.uXi}</div></div>
+      <div class="fd-line"><div class="fd-k">下卦</div><div class="fd-v">${m.dName}（${m.dEl}）· ${m.dXi}</div></div>
+      <div class="fd-line"><div class="fd-k">动爻</div><div class="fd-v">第 ${m.yao} 爻动</div></div>
+      <div class="fd-line"><div class="fd-k">解读</div><div class="fd-v">上${m.uName}下${m.dName}，外${m.uXi}、内${m.dXi}。整体${m.level}，宜静观其变、顺势而为；行事留三分余地，吉无不利。</div></div>
+      <button class="fd-reroll" onclick="rerollMeihua()">🔮 再摇一卦</button>
+      <div class="fd-note">数字起卦，纯娱乐，不作决策依据</div>
+    </div>`;
+  }
+  const el=$("#funModal"); if(el){ el.innerHTML=html; el.classList.add("on"); }
+}
+function closeFun(){ const el=$("#funModal"); if(el) el.classList.remove("on"); }
+function rerollMeihua(){ meihuaCache=meihua(); openFun("meihua"); }
 
 const KEY = "qingchen-workbench-v1";
 const CFG_KEY = "qingchen-wb-cfg";
@@ -930,6 +1111,14 @@ const VIEWS = {
     items.sort((a,b)=>b.ts-a.ts);
     const recent = items.slice(0,3);
 
+    /* 趣味小窗数据 */
+    const alm = dailyAlmanac(now);
+    const gz = gzDay(now);
+    const sign = westernSign(now.getMonth()+1, now.getDate());
+    const sx = zodiacOf(now.getFullYear());
+    const starF = dailyFortune("star-"+sign.n);
+    const sxF = dailyFortune("sx-"+sx);
+
     return `
     <div class="home-wrap">
 
@@ -1016,6 +1205,41 @@ const VIEWS = {
             </div>
             <div class="t">${fmtTime(r.ts)}</div>
           </div>`).join("")}</div>`:`<div class="home-sec-empty">心情 / 便签 / 树洞里有内容就会在这聚合展示</div>`}
+      </div>
+
+      <!-- 今日趣味 -->
+      <div class="home-sec">
+        <h3>✨ 今日趣味</h3>
+        <div class="fun-grid">
+          <div class="fun-card" onclick="openFun('huangli')">
+            <div class="fc-glow">📜</div>
+            <div class="fc-top"><span class="fc-ic">📜</span><span class="fc-name">老黄历</span></div>
+            <div class="fc-big">宜 ${esc(alm.yi[0])}</div>
+            <div class="fc-sub">忌 ${esc(alm.ji[0])} · ${gz.gz}日</div>
+            <div class="fc-go">查看 ›</div>
+          </div>
+          <div class="fun-card" onclick="openFun('star')">
+            <div class="fc-glow">${sign.em}</div>
+            <div class="fc-top"><span class="fc-ic">${sign.em}</span><span class="fc-name">星座运势</span></div>
+            <div class="fc-big">${sign.n}座</div>
+            <div class="fc-sub">综合 ${starF.overall} 分 · ${esc(starF.summary)}</div>
+            <div class="fc-go">查看 ›</div>
+          </div>
+          <div class="fun-card" onclick="openFun('shengxiao')">
+            <div class="fc-glow">🐾</div>
+            <div class="fc-top"><span class="fc-ic">🐾</span><span class="fc-name">生肖运程</span></div>
+            <div class="fc-big">${sx}年</div>
+            <div class="fc-sub">今日 ${sxF.overall} 分 · ${esc(sxF.summary)}</div>
+            <div class="fc-go">查看 ›</div>
+          </div>
+          <div class="fun-card" onclick="openFun('meihua')">
+            <div class="fc-glow">🔮</div>
+            <div class="fc-top"><span class="fc-ic">🔮</span><span class="fc-name">梅花易数</span></div>
+            <div class="fc-big">占一卦</div>
+            <div class="fc-sub">心有所念，点开求一卦</div>
+            <div class="fc-go">起卦 ›</div>
+          </div>
+        </div>
       </div>
 
       <!-- 应用导览 -->
