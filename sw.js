@@ -1,4 +1,4 @@
-const CACHE = "qingchen-wb-v9";
+const CACHE = "qingchen-wb-v10";
 const FILES = [
   "index.html",
   "manifest.json",

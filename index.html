@@ -96,6 +96,13 @@
   .goal-in{border:1px solid var(--line);background:#fff;border-radius:8px;padding:3px 8px;font-size:13px;width:96px;font-family:inherit;color:var(--ink)}
   .goal-in:focus{outline:none;border-color:var(--green)}
 
+  /* 便签图标选择 */
+  .ic-pick{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+  .ic-chip{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:#FBF7EF;
+    font-size:17px;display:grid;place-items:center;cursor:pointer;transition:.12s;font-family:inherit;padding:0;line-height:1}
+  .ic-chip:hover{background:#FFF6E4;border-color:var(--gold)}
+  .ic-chip.on{background:#FFF6E4;border-color:var(--gold);box-shadow:0 0 0 2px rgba(231,198,75,.35)}
+
   /* 日记卡片（心情/便签/树洞） */
   .diary{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:#fff;margin-top:12px;position:relative}
   .diary-head{display:flex;align-items:center;gap:10px}
@@ -281,6 +288,10 @@ const MODULES = [
   {id:"notes",   name:"便签",     ic:"🗒️", color:"#9FC2E8"},
   {id:"whisper", name:"树洞",     ic:"🌳", color:"#A8C686"},
 ];
+
+// 便签可选图标
+const NOTE_ICONS = ["🗒️","📝","✏️","📌","📎","💡","⭐","⚡","🔥","🎯","💰","📚","🎓","🚀","🌟","💪","❤️","🌈","☕","🍎","🏠","🛒","⚠️","✅","🔔","🎉","🌿","💻","📅","🧠"];
+let noteSelIc = "🗒️";
 
 const KEY = "qingchen-workbench-v1";
 const CFG_KEY = "qingchen-wb-cfg";
@@ -619,12 +630,13 @@ const VIEWS = {
     <div class="card">
       <h2>🗒️ 便签墙</h2>
       <div class="add"><input id="n-in" placeholder="写一张便签，回车添加"/><button class="btn" onclick="addNote()">添加</button></div>
+      <div class="ic-pick" id="icPick">${NOTE_ICONS.map(i=>`<button class="ic-chip${i===noteSelIc?' on':''}" onclick="pickIc('${i}')">${i}</button>`).join('')}</div>
       <div class="notes" style="margin-top:14px">
         ${state.notes.slice().reverse().map(n=>{
           const ts=n.ts||Date.now();
           return `<div class="diary" style="background:${n.color}">
             <div class="diary-head">
-              <div class="diary-av" style="background:rgba(255,255,255,.6)">🗒️</div>
+              <div class="diary-av" style="background:rgba(255,255,255,.6)">${n.ic||'🗒️'}</div>
               <div><div class="diary-name">便签</div>
                 <div class="diary-sub" style="color:#6b5b3a">${n.t&&!/^\d{2}-\d{2}$/.test(n.t)?esc(n.t):'随手记'}</div></div>
               <div class="diary-time">${fmtDate(ts)}</div>
@@ -713,8 +725,9 @@ function setGoal(v){ const n=Math.max(0, Math.round(+v||0)); state.money.goal=n;
 function setProj(name,st){const p=state.project.find(x=>x.name===name);p.status=st;save();render()}
 function addNote(){const v=$("#n-in").value.trim();if(!v)return;
   const cs=["#FFF2B8","#D6E8C8","#FBD3D3","#D3E4FB","#EAD9F2","#FCE4C8"];
-  state.notes.push({id:uid(),color:cs[Math.floor(Math.random()*cs.length)],text:v,ts:Date.now()});save();render();
+  state.notes.push({id:uid(),color:cs[Math.floor(Math.random()*cs.length)],ic:noteSelIc,text:v,ts:Date.now()});save();render();
   const i=$("#n-in"); if(i) i.value="";}
+function pickIc(ic){ noteSelIc=ic; document.querySelectorAll('#icPick .ic-chip').forEach(c=>c.classList.toggle('on', c.textContent===ic)); }
 function delNote(id){state.notes=state.notes.filter(x=>x.id!==id);save();render()}
 function delMood(id,idx){if(id) state.mood=state.mood.filter(x=>x.id!==id); else state.mood.splice(idx,1); save();render()}
 function addWhisper(){const v=$("#w-in").value.trim();if(!v)return;
