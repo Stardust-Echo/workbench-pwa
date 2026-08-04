@@ -177,11 +177,9 @@
   .set-sec:first-of-type{border-top:none;padding-top:4px;margin-top:6px}
   .set-t{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:12px}
   .set-hint{font-size:12px;color:var(--muted);margin:10px 0 4px;line-height:1.6}
-  .font-chip{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--line);border-radius:13px;background:var(--card);cursor:pointer;transition:.15s;position:relative}
-  .font-chip.on{border-color:var(--green);background:color-mix(in srgb, var(--green) 10%, var(--card))}
-  .font-chip .fc-name{flex:0 0 84px;font-size:14px;font-weight:600;color:var(--ink)}
-  .font-chip .fc-sample{flex:1;font-size:14px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .font-chip .fc-check{color:var(--green);font-weight:700;font-size:15px;font-family:inherit}
+  .font-sel{width:100%;padding:11px 38px 11px 14px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink);font-size:14px;cursor:pointer;appearance:none;-webkit-appearance:none;outline:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%239B8F82' d='M6 8L2 4h8z'/></svg>");background-repeat:no-repeat;background-position:right 14px center;transition:.15s}
+  .font-sel:focus,.font-sel:hover{border-color:var(--green)}
+  .font-preview{padding:11px 14px;border:1px dashed var(--line);border-radius:10px;font-size:14px;color:var(--ink);background:var(--bg);line-height:1.55}
   .pin-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
   .pin-chip{display:inline-flex;align-items:center;gap:6px;background:#FBF7EF;border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:13px;color:var(--ink)}
   .pin-dot{width:10px;height:10px;border-radius:50%}
@@ -1817,13 +1815,12 @@ const VIEWS = {
 
       <div class="set-sec">
         <div class="set-t">🔤 字体</div>
-        <div class="set-hint">每款都用自带字形预览，点一下整站字体立刻切换（使用设备已安装字体，无需联网下载）。</div>
-        <div style="display:flex;flex-direction:column;gap:9px;margin-top:8px">
-          ${FONTS.map(f=>`<div class="font-chip${fontSaved===f.key?' on':''}" onclick="setFont('${f.key}')" style="font-family:${f.stack}">
-            <span class="fc-name">${f.name}</span>
-            <span class="fc-sample">清晨工作台 · 让每一天更有条理</span>
-            ${fontSaved===f.key?'<span class="fc-check">✓</span>':''}
-          </div>`).join("")}
+        <div class="set-hint">整站统一字体，切换立即生效（使用设备已安装字体，无需联网下载）。</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+          <select id="set-font" class="font-sel" onchange="setFont(this.value)" style="font-family:${(FONTS.find(x=>x.key===(fontSaved||'default'))||FONTS[0]).stack}">
+            ${FONTS.map(f=>`<option value="${f.key}"${(!fontSaved&&f.key==='default')||fontSaved===f.key?' selected':''}>${f.name}</option>`).join("")}
+          </select>
+          <div class="font-preview" style="font-family:${(FONTS.find(x=>x.key===(fontSaved||'default'))||FONTS[0]).stack}">清晨工作台 · 让每一天更有条理</div>
         </div>
       </div>
 
