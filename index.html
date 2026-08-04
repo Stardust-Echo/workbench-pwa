@@ -156,6 +156,16 @@
     display:grid;place-items:center;font-size:12px;font-weight:700}
   .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block}
   .sync-dot.off{background:#ccc}
+  /* 主题配色选择器 */
+  .theme-block{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .theme-label{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:10px}
+  .theme-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .theme-dot{width:36px;height:36px;border-radius:50%;cursor:pointer;border:2px solid rgba(0,0,0,.10);
+    box-shadow:0 2px 6px rgba(0,0,0,.12);padding:0;font-size:18px;color:var(--muted);font-weight:700;
+    display:grid;place-items:center;transition:.15s;font-family:inherit}
+  .theme-dot:hover{transform:scale(1.08)}
+  .theme-dot.on{outline:3px solid var(--ink);outline-offset:2px}
+  .theme-custom{background:#fff;border-style:dashed;color:var(--muted)}
   .modal{position:fixed;inset:0;background:rgba(74,64,57,.35);display:none;place-items:center;z-index:50;padding:20px}
   .modal.on{display:grid}
   .modal .box{position:relative;background:#fff;border-radius:18px;padding:22px;width:100%;max-width:360px;box-shadow:var(--shadow)}
@@ -293,6 +303,40 @@ const MODULES = [
   {id:"notes",   name:"便签",     ic:"🗒️", color:"#9FC2E8"},
   {id:"whisper", name:"树洞",     ic:"🌳", color:"#A8C686"},
 ];
+
+/* ---------- 主题配色 ---------- */
+const THEMES = [
+  {key:"mint",   name:"薄荷绿", v:{green:"#8FBF6F", greenD:"#7AAE5A", gold:"#E7B65A", bg:"#FBF4E9"}},
+  {key:"sky",    name:"天空蓝", v:{green:"#6FA8DC", greenD:"#5B95CE", gold:"#E7B65A", bg:"#F0F5FB"}},
+  {key:"sakura", name:"樱花粉", v:{green:"#EF9BB3", greenD:"#E07F9C", gold:"#E7B65A", bg:"#FBF1F4"}},
+  {key:"amber",  name:"暖阳橙", v:{green:"#EFA15A", greenD:"#E0863F", gold:"#E7C24B", bg:"#FBF2E9"}},
+  {key:"violet", name:"紫罗兰", v:{green:"#A488D6", greenD:"#8E6FCB", gold:"#E7B65A", bg:"#F5F0FB"}},
+  {key:"teal",   name:"青柠绿", v:{green:"#5FBFA8", greenD:"#4BA892", gold:"#E7C24B", bg:"#EFF8F4"}},
+  {key:"rose",   name:"玫瑰红", v:{green:"#E27B7B", greenD:"#CE6262", gold:"#E7B65A", bg:"#FBEEEE"}},
+  {key:"ocean",  name:"深海蓝", v:{green:"#5B8FB0", greenD:"#4A7A98", gold:"#E7B65A", bg:"#EEF3F6"}},
+];
+const THEME_KEY = "qingchen-wb-theme";
+function loadTheme(){ try{return JSON.parse(localStorage.getItem(THEME_KEY))}catch(e){return null} }
+function saveThemeObj(o){ localStorage.setItem(THEME_KEY, JSON.stringify(o)); }
+let curTheme = loadTheme() || {key:"mint", v:THEMES[0].v};
+
+function hexToRgb(h){h=h.replace("#","");if(h.length===3)h=h.split("").map(c=>c+c).join("");return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function rgbToHex(r,g,b){const f=x=>("0"+Math.round(x).toString(16)).slice(-2);return "#"+f(r)+f(g)+f(b);}
+function mix(c1,c2,t){const a=hexToRgb(c1),b=hexToRgb(c2);return rgbToHex(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t);}
+function darken(c,t){return mix(c,"#000000",t);}
+function lighten(c,t){return mix(c,"#ffffff",t);}
+function applyTheme(v){
+  const r=document.documentElement.style;
+  r.setProperty("--green", v.green);
+  r.setProperty("--green-d", v.greenD||darken(v.green,.12));
+  r.setProperty("--gold", v.gold||"#E7B65A");
+  r.setProperty("--bg", v.bg||"#FBF4E9");
+  const mc=document.querySelector('meta[name=theme-color]'); if(mc) mc.setAttribute("content", v.bg||v.green);
+}
+function pickTheme(key){ const t=THEMES.find(x=>x.key===key); if(!t) return; curTheme={key, v:t.v}; applyTheme(t.v); saveThemeObj(curTheme); renderModal(); }
+function openCustomTheme(){ const ce=document.getElementById("customTheme"); if(ce) ce.style.display="flex"; }
+function previewCustomTheme(){ const c=document.getElementById("themeColor").value; applyTheme({green:c, greenD:darken(c,.12), gold:mix(c,"#fff6e4",.5), bg:lighten(c,.9)}); }
+function applyCustomTheme(){ const c=document.getElementById("themeColor").value; const v={green:c, greenD:darken(c,.12), gold:mix(c,"#fff6e4",.5), bg:lighten(c,.9)}; curTheme={key:"custom", v}; applyTheme(v); saveThemeObj(curTheme); renderModal(); }
 
 // 便签可选图标
 const NOTE_ICONS = ["🗒️","📝","✏️","📌","📎","💡","⭐","⚡","🔥","🎯","💰","📚","🎓","🚀","🌟","💪","❤️","🌈","☕","🍎","🏠","🛒","⚠️","✅","🔔","🎉","🌿","💻","📅","🧠"];
@@ -780,6 +824,16 @@ function renderModal(){
         <div class="tip">免费建项目：<a href="https://supabase.com" target="_blank">supabase.com</a> → 复制 Project URL 与 Anon Key（Project Settings → API），并在 SQL Editor 执行 supabase-schema.sql。</div>
       </div>`;
   }
+  // 主题配色选择器（所有模式都可见）
+  h+=`<div class="theme-block"><div class="theme-label">🎨 主题配色</div>
+    <div class="theme-row">${THEMES.map(t=>`<button class="theme-dot${curTheme.key===t.key?' on':''}" title="${t.name}" style="background:${t.v.green}" onclick="pickTheme('${t.key}')"></button>`).join("")}
+    <button class="theme-dot theme-custom${curTheme.key==='custom'?' on':''}" title="自定义颜色" onclick="openCustomTheme()">+</button></div>
+    <div id="customTheme" style="display:${curTheme.key==='custom'?'flex':'none'};margin-top:12px;align-items:center;gap:12px">
+      <input type="color" id="themeColor" value="${curTheme.key==='custom'?curTheme.v.green:'#8FBF6F'}" oninput="previewCustomTheme()" style="width:46px;height:40px;border:none;background:none;cursor:pointer;padding:0"/>
+      <button class="btn sm" onclick="applyCustomTheme()">应用自定义色</button>
+      <span style="font-size:12px;color:var(--muted)">选色后自动生成配色</span>
+    </div>
+  </div>`;
   h+=`</div>`; m.innerHTML=h;
 }
 
@@ -832,6 +886,7 @@ async function pullCloud(manual){
   $("#date").textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${wk}`;
   const h=d.getHours();
   $("#hello").textContent = h<11?"早上好 ☀️":h<18?"下午好 🌿":"晚上好 🌙";
+  applyTheme(curTheme.v);
   buildNav(); syncHabitTasks(); render(); renderAccount(); initSb();
   if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
   // 每 60 秒检测跨天：次日自动清掉旧习惯任务、刷新今日清单
