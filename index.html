@@ -71,7 +71,10 @@
 
   .row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px dashed var(--line)}
   .row:last-child{border-bottom:none}
-  .row .txt{flex:1;font-size:14px}
+  .row .txt{flex:1;font-size:14px; min-width:0}
+  .row .txt b{font-weight:600}
+  .lnk{display:inline-flex; align-items:center; gap:3px; font-size:12px; color:var(--green-d); text-decoration:none; background:color-mix(in srgb, var(--green) 14%, transparent); border-radius:10px; padding:2px 8px; margin-left:8px; vertical-align:middle; white-space:nowrap}
+  .lnk:active{filter:brightness(.95)}
   .row .meta{font-size:12px;color:var(--muted)}
   .chk{width:20px;height:20px;border-radius:7px;border:2px solid var(--line);flex:0 0 auto;
     display:grid;place-items:center;cursor:pointer;color:#fff;font-size:12px;transition:.15s}
@@ -1278,9 +1281,12 @@ const VIEWS = {
         <input id="s-prog" type="number" placeholder="进度%" style="width:84px"/>
         <button class="btn" onclick="addStudy()">添加</button>
       </div>
+      <div class="add" style="margin-top:8px">
+        <input id="s-link" placeholder="链接（选填）：课程网址 / 资料 / 视频…" style="flex:1" />
+      </div>
       ${state.study.length?state.study.map((c,i)=>`
         <div class="row">
-          <div class="txt"><b>${esc(c.title)}</b></div>
+          <div class="txt"><b>${esc(c.title)}</b>${c.link?`<a class="lnk" href="${esc(c.link)}" target="_blank" rel="noopener" title="${esc(c.link)}">🔗 链接</a>`:''}</div>
           <div style="width:140px"><div class="meta" style="text-align:right">${c.progress}%</div>
           <div class="progress"><i style="width:${c.progress}%"></i></div></div>
           <div class="del" onclick="delStudy(${i})">删除</div>
@@ -1568,12 +1574,20 @@ function addFood(){
   save(); render();
 }
 function delFood(i){ if(!state.foodLog||i<0||i>=state.foodLog.length) return; state.foodLog.splice(i,1); save(); render(); }
+function normUrl(u){
+  u=(u||"").trim();
+  if(!u) return "";
+  if(/^https?:\/\//i.test(u)) return u;
+  if(/^[\w.-]+:\/\//i.test(u)) return u; // 已是其它协议（如 market://）
+  return "https://"+u;
+}
 function addStudy(){
   const title=($("#s-title").value||"").trim();
   let prog=parseInt($("#s-prog").value)||0;
   if(prog<0)prog=0; if(prog>100)prog=100;
   if(!title) return;
-  state.study.push({title, progress:prog});
+  const link=normUrl($("#s-link").value);
+  state.study.push({title, progress:prog, link});
   save(); render();
 }
 function delStudy(i){ if(i<0||i>=state.study.length) return; state.study.splice(i,1); save(); render(); }
