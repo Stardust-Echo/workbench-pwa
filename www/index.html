@@ -258,6 +258,111 @@
   .tab-edit-row .order button:disabled{opacity:.35; cursor:not-allowed}
   .tab-edit-save{display:block; margin:14px auto 6px; padding:10px 32px; background:var(--green); color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer; font-family:inherit}
   .tab-edit-hint{font-size:12px; color:var(--muted); text-align:center; padding:2px 16px 4px}
+
+  /* ===== 综合首页（v15） ===== */
+  .home-hero{
+    background:linear-gradient(135deg, color-mix(in srgb, var(--green) 12%, var(--card)) 0%, var(--card) 60%);
+    border:1px solid var(--line); border-radius:18px; padding:18px 18px 16px;
+    box-shadow:var(--shadow); position:relative; overflow:hidden;
+  }
+  .home-hero .greet{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap}
+  .home-hero .greet .hi{font-size:22px; font-weight:600; letter-spacing:.5px}
+  .home-hero .greet .em{font-size:24px}
+  .home-hero .greet .sub{font-size:13px; color:var(--muted)}
+  .home-hero .badge{
+    display:inline-flex; align-items:center; gap:6px;
+    background:color-mix(in srgb, var(--gold) 18%, var(--card));
+    border:1px solid color-mix(in srgb, var(--gold) 35%, var(--card));
+    color:var(--ink); font-size:12px; padding:4px 12px; border-radius:99px; margin:4px 0 10px;
+  }
+  .home-clock{font-size:46px; font-weight:200; letter-spacing:2px;
+    font-feature-settings:"tnum"; color:var(--green-d); text-align:center;
+    margin:6px 0 6px; line-height:1}
+  .home-date{font-size:13px; color:var(--muted); text-align:center}
+  .home-date .lunar{margin-left:8px; opacity:.85}
+
+  .home-q{
+    margin-top:14px; padding:12px 14px; border-radius:14px;
+    background:color-mix(in srgb, var(--green) 8%, var(--card));
+    border:1px dashed color-mix(in srgb, var(--green) 40%, var(--card));
+  }
+  .home-q .lbl{display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--muted)}
+  .home-q .lbl .pill{display:inline-flex; gap:4px; align-items:center;
+    background:color-mix(in srgb, var(--gold) 25%, transparent);
+    padding:2px 9px; border-radius:99px; font-size:11px; color:var(--ink)}
+  .home-q .cn{font-size:16px; line-height:1.55; margin:6px 0 4px; font-weight:500}
+  .home-q .en{font-size:12px; color:var(--muted); font-style:italic}
+
+  .home-sec{
+    margin-top:14px; background:var(--card); border:1px solid var(--line);
+    border-radius:16px; padding:14px 16px; box-shadow:var(--shadow);
+  }
+  .home-sec h3{display:flex; align-items:center; gap:8px; font-size:15px; margin:0 0 10px; font-weight:600}
+  .home-sec h3 .add-btn{margin-left:auto; font-size:12px; color:var(--green-d);
+    background:transparent; border:none; cursor:pointer; padding:2px 8px; font-family:inherit; font-weight:500}
+  .home-sec h3 .add-btn:hover{background:color-mix(in srgb, var(--green) 10%, transparent); border-radius:6px}
+
+  .countdown-row{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px; border-radius:12px;
+    background:color-mix(in srgb, var(--green) 6%, transparent);
+    border:1px solid color-mix(in srgb, var(--green) 18%, transparent);
+    margin-bottom:8px;
+  }
+  .countdown-row .em{font-size:22px; width:34px; height:34px;
+    display:grid; place-items:center; background:var(--card); border-radius:10px; flex:0 0 auto}
+  .countdown-row .info{flex:1; min-width:0}
+  .countdown-row .info .t{font-size:14px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .countdown-row .info .d{font-size:12px; color:var(--muted)}
+  .countdown-row .days{font-size:22px; font-weight:600; color:var(--green-d);
+    font-feature-settings:"tnum"; line-height:1}
+  .countdown-row .days small{font-size:11px; color:var(--muted); font-weight:400; display:block; text-align:right; margin-top:2px}
+  .countdown-row .x{
+    width:26px; height:26px; border-radius:8px; display:grid; place-items:center;
+    background:transparent; color:var(--muted); cursor:pointer; font-size:14px; flex:0 0 auto
+  }
+  .countdown-row .x:hover{background:color-mix(in srgb, var(--pink) 25%, transparent); color:var(--ink)}
+
+  .cd-add{display:flex; gap:8px; padding:8px 0 0; flex-wrap:wrap}
+  .cd-add input[type=text]{flex:1; min-width:110px; padding:7px 10px;
+    border:1px solid var(--line); border-radius:9px; background:var(--card); font-size:13px; font-family:inherit; color:var(--ink)}
+  .cd-add input[type=date]{padding:7px 10px; border:1px solid var(--line); border-radius:9px;
+    background:var(--card); font-size:13px; font-family:inherit; color:var(--ink)}
+  .cd-add .mini{padding:6px 12px; font-size:13px}
+
+  .quick-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
+  .q-cell{
+    background:var(--card); border:1px solid var(--line);
+    border-radius:14px; padding:12px 13px; cursor:pointer;
+    transition:transform .12s, box-shadow .12s;
+  }
+  .q-cell:active{transform:scale(.97)}
+  .q-cell .ico{font-size:22px}
+  .q-cell .lab{font-size:12px; color:var(--muted); margin-top:6px}
+  .q-cell .num{font-size:20px; font-weight:600; color:var(--ink); margin-top:1px;
+    font-feature-settings:"tnum"}
+  .q-cell .num small{font-size:11px; color:var(--muted); font-weight:400}
+  .q-cell .bar{margin-top:6px; height:5px; background:color-mix(in srgb, var(--green) 10%, transparent);
+    border-radius:99px; overflow:hidden}
+  .q-cell .bar i{display:block; height:100%; background:linear-gradient(90deg, var(--green), var(--gold)); border-radius:99px}
+
+  .recent{display:flex; flex-direction:column; gap:8px}
+  .recent-row{
+    display:flex; align-items:flex-start; gap:10px; padding:8px 4px;
+    border-bottom:1px dashed var(--line);
+  }
+  .recent-row:last-child{border-bottom:none}
+  .recent-row .em{font-size:18px; width:30px; height:30px; display:grid; place-items:center;
+    background:color-mix(in srgb, var(--green) 8%, transparent); border-radius:8px; flex:0 0 auto}
+  .recent-row .txt{flex:1; min-width:0; line-height:1.4}
+  .recent-row .txt .lbl{font-size:11px; color:var(--muted); margin-bottom:1px}
+  .recent-row .txt .cn{font-size:13px; overflow:hidden; text-overflow:ellipsis;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical}
+  .recent-row .t{font-size:11px; color:var(--muted); white-space:nowrap; flex:0 0 auto}
+
+  /* 旧的 .card 内联样式会被首页自身覆盖 */
+  .home-wrap{padding-bottom:6px}
+  .home-sec-empty{text-align:center; color:var(--muted); font-size:13px; padding:14px 0}
 </style>
 </head>
 <body>
@@ -299,14 +404,15 @@
 
 <script>
 const MODULES = [
-  {id:"tasks",   name:"任务清单", ic:"📝", color:"#8FBF6F"},
+  {id:"home",    name:"首页",     ic:"🏠", color:"#8FBF6F"},
+  {id:"tasks",   name:"任务清单", ic:"📝", color:"#7FB3A3"},
   {id:"habit",   name:"习惯打卡", ic:"✅", color:"#E7B65A"},
   {id:"mood",    name:"心情记录", ic:"🌈", color:"#F4A6A6"},
-  {id:"read",    name:"阅读",     ic:"📚", color:"#8FB6DD"},
-  {id:"fit",     name:"健身",     ic:"💪", color:"#C9A0DC"},
-  {id:"study",   name:"学习",     ic:"🎓", color:"#7FB3A3"},
+  {id:"idea",    name:"表达能",   ic:"💬", color:"#E7C24B"},
+  {id:"read",    name:"博客精选", ic:"🎙️", color:"#8FB6DD"},
+  {id:"fit",     name:"运动管理", ic:"💪", color:"#C9A0DC"},
+  {id:"study",   name:"学习管理", ic:"🎓", color:"#7FB3A3"},
   {id:"project", name:"项目管理", ic:"📁", color:"#E0936B"},
-  {id:"idea",    name:"想法收集", ic:"💡", color:"#E7C24B"},
   {id:"money",   name:"记账理财", ic:"💰", color:"#D9A441"},
   {id:"notes",   name:"便签",     ic:"🗒️", color:"#9FC2E8"},
   {id:"whisper", name:"树洞",     ic:"🌳", color:"#A8C686"},
@@ -365,12 +471,77 @@ function setCard(c){ document.documentElement.style.setProperty("--card", c); lo
 const NOTE_ICONS = ["🗒️","📝","✏️","📌","📎","💡","⭐","⚡","🔥","🎯","💰","📚","🎓","🚀","🌟","💪","❤️","🌈","☕","🍎","🏠","🛒","⚠️","✅","🔔","🎉","🌿","💻","📅","🧠"];
 let noteSelIc = "🗒️";
 
+// 首页每日金句（按日期取一句，刷新页面也固定到当天）
+const QUOTES = [
+  {cn:"人生没有白走的路，每一步都算数。", en:"No step in life is wasted; every single one counts."},
+  {cn:"你必须非常努力，才能看起来毫不费力。", en:"You have to work hard to make it look effortless."},
+  {cn:"慢慢来，比较快。", en:"Slow is fast."},
+  {cn:"保持热爱，奔赴山海。", en:"Stay passionate, chase the seas and mountains."},
+  {cn:"今天的不开心就到此为止吧，明天依旧光芒万丈。", en:"End the day’s sorrow; tomorrow shines again."},
+  {cn:"把每一个平凡的日子都过得不寻常。", en:"Make every ordinary day extraordinary."},
+  {cn:"自律给我自由。", en:"Discipline is the bridge to freedom."},
+  {cn:"心有猛虎，细嗅蔷薇。", en:"Have a tiger in heart, smell roses gently."},
+  {cn:"种一棵树最好的时间是十年前，其次是现在。", en:"The best time to plant a tree was ten years ago; the second best is now."},
+  {cn:"你所羡慕的一切，都是熬出来的。", en:"Everything you envy, came from enduring."},
+  {cn:"越努力，越幸运。", en:"The harder you work, the luckier you get."},
+  {cn:"温柔的一半是知识。", en:"Half of tenderness is knowledge."},
+  {cn:"做一个温暖的人，浅浅笑，轻轻爱。", en:"Be warm; smile softly, love gently."},
+  {cn:"不被定义的日常，就是最好的日常。", en:"An undefined routine is the best routine."},
+  {cn:"最慢的步伐不是跬步，而是徘徊。", en:"The slowest pace is hesitation, not small steps."},
+  {cn:"你读过的书，都会在未来某个时刻回馈你。", en:"What you read will pay you back someday."},
+  {cn:"别让任何人打乱你的节奏。", en:"Don’t let anyone disrupt your tempo."},
+  {cn:"不是因为看见希望才坚持，而是坚持才看见希望。", en:"You don’t persist because you see hope; you see hope because you persist."},
+  {cn:"把自己变得更好，是解决一切问题的关键。", en:"Becoming better is the key to solving everything."},
+  {cn:"保持微笑，皮囊会骗人，但笑容不会。", en:"A smile never lies."},
+  {cn:"要相信，自己是生活的甲方。", en:"Believe it — you are life’s Party A."},
+  {cn:"生活明朗，万物可爱，人间值得，未来可期。", en:"Life brightens, everything lovely, the world worth it."},
+  {cn:"能扛事的人才有故事。", en:"Those who carry weight have stories."},
+  {cn:"愿你成为自己的太阳，无须凭借谁的光。", en:"Be your own sun; borrow no light."},
+  {cn:"做一个眼里有光的人。", en:"Be a person with light in eyes."},
+  {cn:"今天也是值得被记录的一天。", en:"Today is also worth recording."},
+  {cn:"花会沿途盛开，你以后的路也是。", en:"Flowers bloom along the road; so will yours."},
+  {cn:"允许一切发生。", en:"Allow everything to happen."},
+  {cn:"用心甘情愿的态度，过随遇而安的生活。", en:"Live as ease meets you, with a willing heart."},
+  {cn:"当下即是最好。", en:"The present is the best."},
+];
+function todayQuote(){
+  const d=dayKey(); let h=0; for(let i=0;i<d.length;i++) h=(h*31+d.charCodeAt(i))>>>0;
+  return QUOTES[h % QUOTES.length];
+}
+
+// 简易农历日期（只覆盖常见格式，无需精确月相，按干支年近似）
+const LUNAR_MONTHS=["正月","二月","三月","四月","五月","六月","七月","八月","九月","十月","冬月","腊月"];
+const LUNAR_DAYS=["初一","初二","初三","初四","初五","初六","初七","初八","初九","初十","十一","十二","十三","十四","十五","十六","十七","十八","十九","二十","廿一","廿二","廿三","廿四","廿五","廿六","廿七","廿八","廿九","三十"];
+const HEAVENLY=["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"];
+const EARTHLY=["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"];
+const ZODIAC=["鼠","牛","虎","兔","龙","蛇","马","羊","猴","鸡","狗","猪"];
+function ganZhiYear(y){
+  // 1984 = 甲子年
+  const off = (y - 1984 + 60) % 60;
+  return HEAVENLY[off % 10] + EARTHLY[off % 12] + "年 · " + ZODIAC[off % 12] + "年";
+}
+function approxLunar(d){
+  // 近似计算：用日期年内累计天数做粗略换算（误差 1-2 天，对文案够用）
+  const start=new Date(d.getFullYear(), 0, 0);
+  const diff = (d - start)/86400000;
+  const offset = 50; // 立春大约在第 50 天附近，正月初一常在 30-65 之间
+  let idx = Math.round(diff) - offset;
+  if(idx < 0) idx += 354;
+  const m = Math.floor(idx / 30);
+  const day = (idx % 30) + 1;
+  return `${ganZhiYear(d.getFullYear())} · ${LUNAR_MONTHS[Math.max(0,Math.min(11,m))]}${LUNAR_DAYS[Math.max(0,Math.min(29,day-1))]}`;
+}
+
 const KEY = "qingchen-workbench-v1";
 const CFG_KEY = "qingchen-wb-cfg";
 let sb = null, user = null;
 
 function load(){ try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null} }
 function getCfg(){ try{return JSON.parse(localStorage.getItem(CFG_KEY))}catch(e){return null} }
+function userName(){
+  const cfg=getCfg(); if(cfg && cfg.name){ const n=String(cfg.name).replace(/[^\u4e00-\u9fff\w]/g,'').trim(); if(n) return n; }
+  return "阿莹";
+}
 function save_local(){ localStorage.setItem(KEY, JSON.stringify(state)) }
 
 let state = load() || defaultState();
@@ -378,7 +549,12 @@ function defaultState(){ return {
   tasks:[{id:1,text:"整理本周工作台模块",done:false},{id:2,text:"读完《纳瓦尔宝典》第3章",done:true},{id:3,text:"给基金账户做一次再平衡",done:false}],
   habit:[{id:1,name:"早起 7:00",week:[1,1,0,1,1,0,0]},{id:2,name:"喝水 2L",week:[1,1,1,0,1,0,1]},{id:3,name:"阅读 30 分钟",week:[1,0,1,1,0,1,0]}],
   habitTaskDate:null,
-  tabOrder:["tasks","habit","mood","money","notes"],
+  tabOrder:["home","tasks","habit","mood","money"],
+  countdowns:[
+    {id:1, title:"我的生日", date:"2026-10-09", emoji:"🎂"},
+    {id:2, title:"国庆假期", date:"2026-10-01", emoji:"🏖️"},
+    {id:3, title:"季度复盘", date:"2026-09-30", emoji:"📝"}
+  ],
   mood:[],
   read:[{title:"纳瓦尔宝典",author:"埃里克·乔根森",progress:62,status:"在读"},{title:"置身事内",author:"兰小欢",progress:100,status:"已读"},{title:"事实",author:"汉斯·罗斯林",progress:20,status:"在读"}],
   fit:[{date:"08-02",type:"力量",note:"胸 + 三头，45min"},{date:"08-01",type:"有氧",note:"跑步 5km"}],
@@ -418,11 +594,11 @@ function setSync(ok){ const d=document.querySelector(".sync-dot"); if(d) d.class
   function dayKey(d){ d=d||new Date(); const p=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
   function shortDate(s){ if(!s) return "今天"; const a=String(s).split("-").map(Number); return a.length===3?`${a[1]}月${a[2]}日`:s; }
 
-let current = "tasks";
+let current = "home";
 const $ = s=>document.querySelector(s);
 const esc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-const PRIMARY = ["tasks","habit","mood","money","notes"];
+const PRIMARY = ["home","tasks","habit","mood","money"];
 
 function buildNav(){
   $("#nav").innerHTML = MODULES.map(m=>
@@ -516,10 +692,193 @@ function render(){
   $("#title").textContent = m.name;
   $("#view").innerHTML = VIEWS[current]();
   bind();
+  if(current==="home") tickHomeClock();
+}
+
+/* ---------------- 综合首页（v15） ---------------- */
+let _homeClockTimer = null;
+function tickHomeClock(){
+  const el = document.getElementById("homeClock");
+  if(!el) return;
+  if(_homeClockTimer) clearInterval(_homeClockTimer);
+  const update = ()=>{
+    const d=new Date();
+    const hh=String(d.getHours()).padStart(2,"0");
+    const mm=String(d.getMinutes()).padStart(2,"0");
+    const ss=String(d.getSeconds()).padStart(2,"0");
+    el.textContent = `${hh}:${mm}:${ss}`;
+  };
+  update();
+  _homeClockTimer = setInterval(update, 1000);
+}
+function daysUntil(dateStr){
+  if(!dateStr) return 0;
+  const target = new Date(dateStr+"T00:00:00");
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.round((target - today)/86400000);
+}
+function sortCountdowns(){
+  if(!Array.isArray(state.countdowns)) state.countdowns=[];
+  state.countdowns.sort((a,b)=>daysUntil(a.date)-daysUntil(b.date));
+}
+function addCountdown(){
+  const tEl=document.getElementById("cd-title");
+  const dEl=document.getElementById("cd-date");
+  if(!tEl||!dEl) return;
+  const title=tEl.value.trim();
+  const date=dEl.value;
+  if(!title||!date) return;
+  state.countdowns = state.countdowns || [];
+  state.countdowns.push({id:uid(), title, date, emoji:"📌"});
+  tEl.value=""; dEl.value=""; dEl.type="text"; dEl.value="";
+  save(); render();
+}
+function delCountdown(id){
+  state.countdowns = (state.countdowns||[]).filter(x=>x.id!==id);
+  save(); render();
+}
+function toggleCdAdd(){
+  const el=document.getElementById("cdAdd");
+  if(el) el.style.display = (el.style.display==="none"||el.style.display==='') ? "flex":"none";
 }
 
 /* ---------------- 各模块视图 ---------------- */
 const VIEWS = {
+  home:()=>{
+    const now=new Date();
+    const wk=W[now.getDay()];
+    const dateStr=`${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 · ${wk}`;
+    const lunarStr = approxLunar(now);
+    const greet = now.getHours()<11 ? "早上好" : now.getHours()<18 ? "下午好" : "晚上好";
+    const greetIc = now.getHours()<11 ? "☀️" : now.getHours()<18 ? "🌿" : "🌙";
+    const quote = todayQuote();
+    sortCountdowns();
+
+    /* 快捷卡片数据 */
+    const habitTotal = state.habit.length;
+    const todayIdx = (new Date()).getDay();
+    const habitTodayDone = state.habit.filter(h=>h.week && h.week[todayIdx]).length;
+    const habitPct = habitTotal? Math.round(habitTodayDone/habitTotal*100) : 0;
+    const taskTotal = state.tasks.length;
+    const taskDone = state.tasks.filter(t=>t.done).length;
+    const taskPct = taskTotal? Math.round(taskDone/taskTotal*100) : 0;
+    const saved = state.money.saved||0;
+    const goal = state.money.goal||1;
+    const moneyPct = Math.min(100, Math.round(saved/goal*100));
+    const lastMood = state.mood[state.mood.length-1];
+    const lastMoodTxt = lastMood ? `${lastMood.emoji} ${lastMood.label}` : "未记录";
+
+    /* 最近记录：合并心情/便签/树洞，按时间倒序取 3 条 */
+    const items=[];
+    state.mood.forEach(x=>items.push({em:x.emoji, lbl:"心情", cn:(x.label||"")+(x.note?` · ${x.note}`:""), ts:x.ts||Date.now()}));
+    state.notes.forEach(x=>items.push({em:x.ic||"🗒️", lbl:"便签", cn:x.text, ts:x.ts||Date.now()}));
+    state.whisper.forEach(x=>{const it=typeof x==="string"?{text:x,ts:Date.now()}:x; items.push({em:"🌿", lbl:"树洞", cn:it.text, ts:it.ts||Date.now()});});
+    items.sort((a,b)=>b.ts-a.ts);
+    const recent = items.slice(0,3);
+
+    return `
+    <div class="home-wrap">
+
+      <!-- Hero 卡片：问候 + 大时钟 + 日期 + 农历 -->
+      <div class="home-hero">
+        <div class="greet">
+          <span class="hi">Hi, ${greet} ${userName()}</span>
+          <span class="em">${greetIc}</span>
+        </div>
+        <div class="badge">🏡 春日部·你自己的小天地</div>
+        <div class="home-clock" id="homeClock">--:--:--</div>
+        <div class="home-date">${dateStr}<span class="lunar">· 农历 ${lunarStr}</span></div>
+
+        <!-- 今日金句 -->
+        <div class="home-q">
+          <div class="lbl"><span>💬 今日金句</span><span class="pill">⚡ 每日共勉</span></div>
+          <div class="cn">${esc(quote.cn)}</div>
+          <div class="en">${esc(quote.en)}</div>
+        </div>
+      </div>
+
+      <!-- 倒计时 -->
+      <div class="home-sec">
+        <h3>⏳ 倒计时 <button class="add-btn" onclick="toggleCdAdd()">+ 添加</button></h3>
+        ${(state.countdowns||[]).length?(state.countdowns).map(c=>{
+          const days = daysUntil(c.date);
+          const past = days < 0;
+          return `<div class="countdown-row">
+            <div class="em">${c.emoji||"📌"}</div>
+            <div class="info">
+              <div class="t">${esc(c.title)}</div>
+              <div class="d">${c.date}${past? ' · 已过':''}</div>
+            </div>
+            <div class="days" style="${past?'opacity:.5':''}">${past?Math.abs(days):days}<small>${past?'天前':'天后'}</small></div>
+            <div class="x" onclick="delCountdown(${c.id})">✕</div>
+          </div>`;
+        }).join(""):`<div class="home-sec-empty">还没有倒计时，记一个重要的日子吧</div>`}
+        <div class="cd-add" id="cdAdd" style="display:none">
+          <input type="text" id="cd-title" placeholder="事件名（如：生日/复盘）" maxlength="20"/>
+          <input type="date" id="cd-date"/>
+          <button class="btn mini" onclick="addCountdown()">记下来</button>
+        </div>
+      </div>
+
+      <!-- 快捷卡片网格 -->
+      <div class="home-sec">
+        <h3>📊 今日状态</h3>
+        <div class="quick-grid">
+          <div class="q-cell" onclick="selectModule('habit')">
+            <div class="ico">✅</div>
+            <div class="lab">今日打卡</div>
+            <div class="num">${habitTodayDone}/${habitTotal}<small> 项</small></div>
+            <div class="bar"><i style="width:${habitPct}%"></i></div>
+          </div>
+          <div class="q-cell" onclick="selectModule('tasks')">
+            <div class="ico">📝</div>
+            <div class="lab">任务进度</div>
+            <div class="num">${taskDone}/${taskTotal}<small> 条</small></div>
+            <div class="bar"><i style="width:${taskPct}%"></i></div>
+          </div>
+          <div class="q-cell" onclick="selectModule('money')">
+            <div class="ico">💰</div>
+            <div class="lab">存钱进度</div>
+            <div class="num">${moneyPct}<small>%</small></div>
+            <div class="bar"><i style="width:${moneyPct}%"></i></div>
+          </div>
+          <div class="q-cell" onclick="selectModule('mood')">
+            <div class="ico">🌈</div>
+            <div class="lab">最近心情</div>
+            <div class="num" style="font-size:15px">${esc(lastMoodTxt)}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最近记录 -->
+      <div class="home-sec">
+        <h3>🕒 最近记录</h3>
+        ${recent.length?`<div class="recent">${recent.map(r=>`
+          <div class="recent-row">
+            <div class="em">${r.em}</div>
+            <div class="txt">
+              <div class="lbl">${r.lbl}</div>
+              <div class="cn">${esc(r.cn)}</div>
+            </div>
+            <div class="t">${fmtTime(r.ts)}</div>
+          </div>`).join("")}</div>`:`<div class="home-sec-empty">心情 / 便签 / 树洞里有内容就会在这聚合展示</div>`}
+      </div>
+
+      <!-- 应用导览 -->
+      <div class="home-sec">
+        <h3>🧭 全部模块</h3>
+        <div class="quick-grid" style="grid-template-columns:repeat(3,1fr);gap:8px">
+          ${MODULES.filter(x=>x.id!=="home"&&x.id!=="settings").map(m=>`
+            <div class="q-cell" onclick="selectModule('${m.id}')" style="padding:10px">
+              <div class="ico">${m.ic}</div>
+              <div class="lab" style="margin-top:2px">${m.name}</div>
+            </div>`).join("")}
+        </div>
+      </div>
+
+    </div>`;
+  },
+
   tasks:()=>{
     const done=state.tasks.filter(t=>t.done).length, total=state.tasks.length;
     const pct= total? Math.round(done/total*100):0;
@@ -956,17 +1315,17 @@ async function pullCloud(manual){
 /* ---------------- 启动 ---------------- */
 (function init(){
   const d=new Date();
-  const wk=["周日","周一","周二","周三","周四","周五","周六"][d.getDay()];
-  $("#date").textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${wk}`;
+  const wk=W[d.getDay()];
+  $("#date").textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 · ${wk} · 农历 ${approxLunar(d)}`;
   const h=d.getHours();
-  $("#hello").textContent = h<11?"早上好 ☀️":h<18?"下午好 🌿":"晚上好 🌙";
+  $("#hello").textContent = h<11?"早上好 ☀️ "+userName():h<18?"下午好 🌿 "+userName():"晚上好 🌙 "+userName();
   applyTheme(curTheme.v);
   const savedBg = loadBg(); if(savedBg){ document.documentElement.style.setProperty("--bg", savedBg); const mc=document.querySelector('meta[name=theme-color]'); if(mc) mc.setAttribute("content", savedBg); }
   const savedCard = loadCard(); if(savedCard) document.documentElement.style.setProperty("--card", savedCard);
   buildNav(); syncHabitTasks(); render(); renderAccount(); initSb();
   if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
   // 每 60 秒检测跨天：次日自动清掉旧习惯任务、刷新今日清单
-  setInterval(()=>{ const t=dayKey(); if(state.habitTaskDate!==t){ syncHabitTasks(); if(current==="tasks") render(); } }, 60000);
+  setInterval(()=>{ const t=dayKey(); if(state.habitTaskDate!==t){ syncHabitTasks(); if(current==="tasks"||current==="home") render(); } }, 60000);
 })();
 </script>
 </body>
