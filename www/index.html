@@ -59,7 +59,7 @@
   .grid{display:grid; gap:14px}
   .g2{grid-template-columns:repeat(2,1fr)}
   .g3{grid-template-columns:repeat(3,1fr)}
-  @media(max-width:560px){.g2,.g3{grid-template-columns:1fr}}
+  @media(max-width:560px){.g2{grid-template-columns:1fr}}
 
   .stat{background:#FBF7EF;border:1px solid var(--line);border-radius:14px;padding:14px}
   .stat .k{font-size:12px;color:var(--muted)}
@@ -116,12 +116,15 @@
   .seg button{border:none;background:none;padding:8px 14px;font-size:13px;cursor:pointer;color:var(--muted);font-family:inherit}
   .seg button.on{background:var(--green);color:#fff}
 
-  .habit{display:flex;align-items:center;gap:12px}
-  .habit .name{flex:1;font-size:14px;font-weight:500}
+  .habit-card{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px;background:#FFFDF8}
+  .habit{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .habit .name{flex:1;font-size:15px;font-weight:600;color:var(--ink)}
   .week{display:flex;gap:6px}
   .day{width:26px;height:26px;border-radius:8px;background:#FBF7EF;border:1px solid var(--line);
     display:grid;place-items:center;font-size:12px;color:var(--muted);cursor:pointer}
   .day.on{background:var(--green);color:#fff;border-color:var(--green)}
+  .habit-badge{display:inline-block;font-size:11px;background:#EAF3E2;color:#5a7a3a;border:1px solid #D5E6C5;border-radius:8px;padding:1px 7px;margin-left:8px;font-weight:600;vertical-align:middle}
+  .hint{font-size:12px;color:var(--muted);background:#FBF7EF;border:1px solid var(--line);border-radius:8px;padding:7px 10px;margin:8px 0 2px}
 
   .moods{display:flex;gap:10px;flex-wrap:wrap}
   .mood{width:52px;height:52px;border-radius:14px;background:#FBF7EF;border:1px solid var(--line);
@@ -167,15 +170,47 @@
   @media(max-width:720px){
     .sidebar{display:none}
     .tabbar{display:flex; position:fixed; bottom:0; left:0; right:0; z-index:30;
-      background:rgba(255,255,255,.92); backdrop-filter:blur(10px); border-top:1px solid var(--line);
-      padding:6px 4px calc(6px + env(safe-area-inset-bottom)); overflow-x:auto; gap:2px}
-    .tab{flex:0 0 auto; min-width:56px; padding:6px 4px; display:flex; flex-direction:column;
-      align-items:center; gap:3px; font-size:11px; color:var(--muted); cursor:pointer; border-radius:10px}
-    .tab .ic{font-size:19px}
+      background:rgba(255,255,255,.94); backdrop-filter:blur(10px); border-top:1px solid var(--line);
+      padding:6px 6px calc(6px + env(safe-area-inset-bottom)); gap:4px; justify-content:center}
+    .tabbar::-webkit-scrollbar{display:none}
+    .tabbar{scrollbar-width:none}
+    .tab{flex:1 1 0; max-width:84px; padding:6px 2px; display:flex; flex-direction:column;
+      align-items:center; gap:3px; font-size:11px; color:var(--muted); cursor:pointer; border-radius:12px}
+    .tab .ic{font-size:20px}
     .tab.on{color:var(--green-d); background:rgba(143,191,111,.14)}
-    .view{padding:10px 16px 90px}
-    .topbar{padding:14px 16px 4px}
+    .view{padding:calc(8px + env(safe-area-inset-top)) 16px 96px}
+    .topbar{padding:calc(12px + env(safe-area-inset-top)) 16px 6px}
+    .hello{display:none}
+    .account-btn{font-size:12px; padding:6px 11px}
+    .card{padding:16px 16px}
+    /* 表单换行：避免手机上多元素挤一行 */
+    .add{flex-wrap:wrap}
+    .add input{flex:1 1 130px; min-width:0}
+    .add select{flex:0 0 auto}
+    .add .btn,.add .mini{flex:0 0 auto}
+    /* 记账表单：手机上“类型整行 + 金额/类别一行 + 按钮一行” */
+    .money-add{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+    .money-add select{grid-column:1 / -1}
+    .money-add .mini,.money-add .btn{margin-top:0}
+    .money-add input{flex:none}
+    /* 习惯打卡：手机上“名称+删除”一行，星期铺开另起一行 */
+    .habit .name{flex:1 1 auto; min-width:0}
+    .habit .del{flex:0 0 auto; align-self:center}
+    .week{flex:1 1 100%; justify-content:space-between; max-width:none; gap:4px}
   }
+  /* ---------- 更多（手机底部弹层） ---------- */
+  .sheet-mask{position:fixed; inset:0; background:rgba(74,64,57,.35); z-index:60; display:none; opacity:0; transition:opacity .2s}
+  .sheet-mask.on{display:block; opacity:1}
+  .sheet{position:fixed; left:0; right:0; bottom:0; z-index:61; background:#fff; border-radius:22px 22px 0 0;
+    padding:6px 10px calc(14px + env(safe-area-inset-bottom)); max-height:74vh; overflow-y:auto;
+    transform:translateY(100%); transition:transform .28s ease}
+  .sheet-mask.on .sheet{transform:translateY(0)}
+  .sheet-grab{width:38px; height:4px; border-radius:3px; background:var(--line); margin:6px auto 10px}
+  .sheet-title{font-size:12px; color:var(--muted); padding:0 14px 4px; font-weight:600; letter-spacing:.5px}
+  .sheet-row{display:flex; align-items:center; gap:14px; padding:15px 16px; border-radius:14px; font-size:16px; cursor:pointer}
+  .sheet-row:active{background:#FBF7EF}
+  .sheet-row .ic{font-size:22px; width:26px; text-align:center}
+  .sheet-row.active{color:var(--green-d); font-weight:600}
 </style>
 </head>
 <body>
@@ -197,6 +232,13 @@
   </main>
 </div>
 <nav class="tabbar" id="tabbar"></nav>
+<div class="sheet-mask" id="sheetMask" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet">
+    <div class="sheet-grab"></div>
+    <div class="sheet-title">全部模块</div>
+    <div id="sheetList"></div>
+  </div>
+</div>
 <div class="modal" id="accountModal" onclick="if(event.target===this)toggleModal()"></div>
 
 <script>
@@ -225,7 +267,8 @@ function save_local(){ localStorage.setItem(KEY, JSON.stringify(state)) }
 let state = load() || defaultState();
 function defaultState(){ return {
   tasks:[{id:1,text:"整理本周工作台模块",done:false},{id:2,text:"读完《纳瓦尔宝典》第3章",done:true},{id:3,text:"给基金账户做一次再平衡",done:false}],
-  habit:[{name:"早起 7:00",week:[1,1,0,1,1,0,0]},{name:"喝水 2L",week:[1,1,1,0,1,0,1]},{name:"阅读 30 分钟",week:[1,0,1,1,0,1,0]}],
+  habit:[{id:1,name:"早起 7:00",week:[1,1,0,1,1,0,0]},{id:2,name:"喝水 2L",week:[1,1,1,0,1,0,1]},{id:3,name:"阅读 30 分钟",week:[1,0,1,1,0,1,0]}],
+  habitTaskDate:null,
   mood:[],
   read:[{title:"纳瓦尔宝典",author:"埃里克·乔根森",progress:62,status:"在读"},{title:"置身事内",author:"兰小欢",progress:100,status:"已读"},{title:"事实",author:"汉斯·罗斯林",progress:20,status:"在读"}],
   fit:[{date:"08-02",type:"力量",note:"胸 + 三头，45min"},{date:"08-01",type:"有氧",note:"跑步 5km"}],
@@ -262,18 +305,34 @@ function setSync(ok){ const d=document.querySelector(".sync-dot"); if(d) d.class
     const d=new Date(ts),p=n=>String(n).padStart(2,"0");
     return `${p(d.getHours())}:${p(d.getMinutes())}`;
   }
+  function dayKey(d){ d=d||new Date(); const p=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+  function shortDate(s){ if(!s) return "今天"; const a=String(s).split("-").map(Number); return a.length===3?`${a[1]}月${a[2]}日`:s; }
 
 let current = "tasks";
 const $ = s=>document.querySelector(s);
 const esc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
+const PRIMARY = ["tasks","habit","mood","money","notes"];
+
 function buildNav(){
   $("#nav").innerHTML = MODULES.map(m=>
     `<div class="nav-item ${m.id===current?'active':''}" data-m="${m.id}"><span class="ic">${m.ic}</span>${m.name}</div>`).join("");
-  $("#tabbar").innerHTML = MODULES.map(m=>
-    `<div class="tab ${m.id===current?'on':''}" data-m="${m.id}"><span class="ic">${m.ic}</span>${m.name}</div>`).join("");
-  document.querySelectorAll(".nav-item,.tab").forEach(el=>el.onclick=()=>{current=el.dataset.m;buildNav();render();});
+  $("#tabbar").innerHTML =
+    PRIMARY.map(m=>`<div class="tab ${m===current?'on':''}" data-m="${m}"><span class="ic">${MODULES.find(x=>x.id===m).ic}</span>${MODULES.find(x=>x.id===m).name}</div>`).join("")
+    + `<div class="tab ${PRIMARY.includes(current)?'':'on'}" data-m="__more"><span class="ic">☰</span>更多</div>`;
+  document.querySelectorAll(".nav-item").forEach(el=>el.onclick=()=>{current=el.dataset.m;buildNav();render();});
+  document.querySelectorAll(".tab").forEach(el=>el.onclick=()=>{
+    if(el.dataset.m==="__more"){ openSheet(); return; }
+    current=el.dataset.m; buildNav(); render();
+  });
 }
+function renderSheet(){
+  $("#sheetList").innerHTML = MODULES.map(m=>
+    `<div class="sheet-row ${m.id===current?'active':''}" onclick="selectModule('${m.id}')"><span class="ic">${m.ic}</span>${m.name}</div>`).join("");
+}
+function openSheet(){ renderSheet(); $("#sheetMask").classList.add("on"); }
+function closeSheet(){ $("#sheetMask").classList.remove("on"); }
+function selectModule(id){ closeSheet(); current=id; buildNav(); render(); }
 
 function render(){
   const m = MODULES.find(x=>x.id===current);
@@ -284,32 +343,41 @@ function render(){
 
 /* ---------------- 各模块视图 ---------------- */
 const VIEWS = {
-  tasks:()=>`
+  tasks:()=>{
+    const done=state.tasks.filter(t=>t.done).length, total=state.tasks.length;
+    const pct= total? Math.round(done/total*100):0;
+    const dayLabel = state.habitTaskDate? shortDate(state.habitTaskDate): "今天";
+    const hn = state.tasks.filter(t=>t.habit).length;
+    return `
     <div class="card">
-      <h2>📝 任务清单 <span class="tag">${state.tasks.filter(t=>t.done).length}/${state.tasks.length} 已完成</span></h2>
-      ${state.tasks.length?`<div class="progress"><i style="width:${Math.round(state.tasks.filter(t=>t.done).length/state.tasks.length*100)}%"></i></div>`:""}
+      <h2>📝 任务清单 <span class="tag">${dayLabel}</span><span class="tag">${done}/${total} 已完成</span></h2>
+      ${total?`<div class="progress"><i style="width:${pct}%"></i></div>`:""}
+      ${hn?`<div class="hint">🔁 含 ${hn} 条每日习惯 · 次日自动刷新</div>`:""}
       <div class="add">
         <input id="t-in" placeholder="添加一条任务，回车提交" />
         <button class="btn" onclick="addTask()">添加</button>
       </div>
-      ${state.tasks.length?state.tasks.map(t=>`
+      ${total?state.tasks.map(t=>`
         <div class="row ${t.done?'done':''}">
           <div class="chk ${t.done?'on':''}" onclick="toggleTask(${t.id})">✓</div>
-          <div class="txt">${esc(t.text)}</div>
+          <div class="txt">${esc(t.text)}${t.habit?'<span class="habit-badge">🔁 习惯</span>':''}</div>
           <div class="del" onclick="delTask(${t.id})">删除</div>
         </div>`).join(""):'<div class="empty">还没有任务，加一条吧～</div>'}
-    </div>`,
+    </div>`;
+  },
 
   habit:()=>`
     <div class="card">
-      <h2>✅ 习惯打卡 <span class="tag">本周</span></h2>
+      <h2>✅ 习惯打卡 <span class="tag">每周打卡</span></h2>
       ${state.habit.map((h,i)=>`
-        <div class="habit">
-          <div class="name">${esc(h.name)}</div>
+        <div class="habit-card">
+          <div class="habit">
+            <div class="name">${esc(h.name)}</div>
+            <div class="del" onclick="delHabit(${i})">删除</div>
+          </div>
           <div class="week">
             ${h.week.map((d,j)=>`<div class="day ${d?'on':''}" onclick="toggleHabit(${i},${j})">${["日","一","二","三","四","五","六"][j]}</div>`).join("")}
           </div>
-          <div class="del" onclick="delHabit(${i})">删</div>
         </div>`).join("")}
       <div class="add" style="margin-top:12px">
         <input id="h-in" placeholder="新增习惯，如：冥想 10 分钟" />
@@ -403,7 +471,7 @@ const VIEWS = {
         <div class="stat"><div class="k">还差</div><div class="v">¥${(state.money.goal-state.money.saved).toLocaleString()}</div></div>
       </div>
       <div class="progress"><i style="width:${p}%"></i></div>
-      <div class="add" style="margin-top:14px">
+      <div class="add money-add" style="margin-top:14px">
         <select id="m-type"><option value="in">＋存入</option><option value="out">－支出</option></select>
         <input id="m-amt" type="number" placeholder="金额"/>
         <input id="m-cat" list="money-cats" placeholder="类别"/>
@@ -507,8 +575,29 @@ function bind(){
 function addTask(){const v=$("#t-in").value.trim();if(!v)return;state.tasks.push({id:uid(),text:v,done:false});save();render()}
 function toggleTask(id){const t=state.tasks.find(x=>x.id===id);t.done=!t.done;save();render()}
 function delTask(id){state.tasks=state.tasks.filter(x=>x.id!==id);save();render()}
-function addHabit(){const v=$("#h-in").value.trim();if(!v)return;state.habit.push({name:v,week:[0,0,0,0,0,0,0]});save();render()}
-function delHabit(i){state.habit.splice(i,1);save();render()}
+/* 习惯 ↔ 任务清单联动：把当天习惯生成成每日任务，次日自动刷新 */
+function syncHabitTasks(){
+  const today=dayKey();
+  state.habit.forEach(h=>{ if(h.id===undefined||h.id===null) h.id=uid(); });
+  if(state.habitTaskDate===today) return;
+  state.tasks=state.tasks.filter(t=>!t.habit);
+  state.habit.forEach(h=>state.tasks.push({id:uid(),text:h.name,done:false,habit:true,hid:h.id,day:today}));
+  state.habitTaskDate=today; save();
+}
+function addHabit(){const v=$("#h-in").value.trim();if(!v)return;
+  const h={id:uid(),name:v,week:[0,0,0,0,0,0,0]};
+  state.habit.push(h);
+  const today=dayKey();
+  if(state.habitTaskDate!==today){ syncHabitTasks(); }
+  else { state.tasks.push({id:uid(),text:v,done:false,habit:true,hid:h.id,day:today}); }
+  save();render();
+  const i=$("#h-in"); if(i) i.value="";
+}
+function delHabit(i){const h=state.habit[i];const id=h&&h.id;
+  state.habit.splice(i,1);
+  if(id) state.tasks=state.tasks.filter(t=>!(t.habit && t.hid===id));
+  save();render();
+}
 function toggleHabit(i,j){state.habit[i].week[j]=state.habit[i].week[j]?0:1;save();render()}
 function logMood(e,l){state._lastMood={emoji:e,label:l};save();render()}
 function saveMoodNote(){const note=$("#m-note").value.trim();const last=state._lastMood||{emoji:"🙂",label:"一般"};
@@ -620,7 +709,7 @@ async function pullCloud(manual){
   if(!sb||!user) return;
   const {data,error}=await sb.from("workbench_state").select("data").eq("user_id",user.id).maybeSingle();
   if(error) return;
-  if(data && data.data){ state=data.data; save_local(); render(); }
+  if(data && data.data){ state=data.data; save_local(); syncHabitTasks(); render(); }
   else { save(); } // 云端还没有 → 把本地推上去
   if(manual) renderAccount();
 }
@@ -632,8 +721,10 @@ async function pullCloud(manual){
   $("#date").textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${wk}`;
   const h=d.getHours();
   $("#hello").textContent = h<11?"早上好 ☀️":h<18?"下午好 🌿":"晚上好 🌙";
-  buildNav(); render(); renderAccount(); initSb();
+  buildNav(); syncHabitTasks(); render(); renderAccount(); initSb();
   if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
+  // 每 60 秒检测跨天：次日自动清掉旧习惯任务、刷新今日清单
+  setInterval(()=>{ const t=dayKey(); if(state.habitTaskDate!==t){ syncHabitTasks(); if(current==="tasks") render(); } }, 60000);
 })();
 </script>
 </body>
