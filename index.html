@@ -311,6 +311,47 @@
     background:transparent; border:none; cursor:pointer; padding:2px 8px; font-family:inherit; font-weight:500}
   .home-sec h3 .add-btn:hover{background:color-mix(in srgb, var(--green) 10%, transparent); border-radius:6px}
 
+  /* 区块标题（彩色图标徽章 + 标题 + 右侧操作）—— 提升板块区分度与层级 */
+  .sec-h{display:flex; align-items:center; gap:9px; margin:0 0 12px}
+  .sec-h .sec-ic{width:30px; height:30px; border-radius:9px; display:grid; place-items:center; font-size:16px; flex:0 0 auto; box-shadow:0 2px 6px rgba(120,95,60,.14)}
+  .sec-h .sec-title{font-size:15px; font-weight:700; color:var(--ink)}
+  .sec-h .add-btn{margin-left:auto; font-size:12px; color:var(--green-d);
+    background:transparent; border:none; cursor:pointer; padding:3px 9px; font-family:inherit; font-weight:500}
+  .sec-h .add-btn:hover{background:color-mix(in srgb, var(--green) 10%, transparent); border-radius:6px}
+
+  /* 今日概览：环形进度 + 联动小卡 */
+  .ov{display:flex; gap:14px; align-items:center}
+  .ov-ring{position:relative; width:84px; height:84px; flex:0 0 84px; display:grid; place-items:center}
+  .ov-ring svg{transform:rotate(-90deg)}
+  .ov-ring b{position:absolute; font-size:18px; font-weight:700; color:var(--green-d); font-feature-settings:"tnum"}
+  .ov-ring .ov-cap{position:absolute; bottom:-2px; font-size:11px; color:var(--muted)}
+  .ov-grid{flex:1; display:grid; grid-template-columns:repeat(3,1fr); gap:9px}
+  .ov-cell{background:color-mix(in srgb, var(--green) 6%, transparent); border:1px solid color-mix(in srgb, var(--green) 16%, transparent);
+    border-radius:12px; padding:9px 10px; cursor:pointer; transition:transform .12s}
+  .ov-cell:active{transform:scale(.97)}
+  .ov-cell .ov-ic{font-size:16px}
+  .ov-cell .ov-num{font-size:17px; font-weight:700; color:var(--ink); font-feature-settings:"tnum"; margin-top:2px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .ov-cell .ov-num small{font-size:10px; color:var(--muted); font-weight:400}
+  .ov-cell .ov-lab{font-size:11px; color:var(--muted); margin-top:1px}
+  .ov-cell .ov-bar{margin-top:5px; height:4px; background:color-mix(in srgb, var(--green) 14%, transparent); border-radius:99px; overflow:hidden}
+  .ov-cell .ov-bar i{display:block; height:100%; background:linear-gradient(90deg, var(--green), var(--gold)); border-radius:99px}
+  @media(max-width:380px){ .ov-grid{grid-template-columns:repeat(2,1fr)} .ov-ring{display:none} .ov{display:block} }
+
+  /* 快捷记录：首页一键直达，缩短操作路径 */
+  .quick-acts{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap}
+  .quick-acts .qa{flex:1; min-width:64px; display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:9px 6px; border-radius:12px; background:color-mix(in srgb, var(--green) 8%, transparent);
+    border:1px solid color-mix(in srgb, var(--green) 20%, transparent); cursor:pointer; font-family:inherit; color:var(--ink)}
+  .quick-acts .qa:active{transform:scale(.96)}
+  .quick-acts .qa .qa-ic{font-size:18px}
+  .quick-acts .qa .qa-lab{font-size:11px; color:var(--muted)}
+
+  /* 「更多」按类别分组 */
+  .sheet-cat{font-size:11px; color:var(--muted); font-weight:700; letter-spacing:1px;
+    padding:14px 16px 4px; display:flex; align-items:center; gap:6px}
+  .sheet-cat:first-child{padding-top:4px}
+  .sheet-cat::after{content:""; flex:1; height:1px; background:var(--line)}
+
   .countdown-row{
     display:flex; align-items:center; gap:10px;
     padding:10px 12px; border-radius:12px;
@@ -535,6 +576,15 @@ const MODULES = [
   {id:"whisper", name:"树洞",     ic:"🌳", color:"#A8C686"},
   {id:"settings",name:"设置",     ic:"⚙️", color:"#B6AEA3"},
 ];
+
+/* 模块分类（用于「更多」按类别分组，解决高低频混放 / 层级不清） */
+const CATS = [
+  {key:"core", name:"核心日常", ids:["tasks","habit","mood","money"]},
+  {key:"note", name:"记录沉淀", ids:["idea","notes","whisper","read"]},
+  {key:"grow", name:"规划成长", ids:["fit","study","project"]},
+  {key:"sys",  name:"系统设置", ids:["settings"]},
+];
+function catOf(id){ const c=CATS.find(c=>c.ids.includes(id)); return c?c.key:""; }
 
 /* ---------- 食材热量表（千卡 / 100g，常见食物） ---------- */
 const FOOD_CAL = {
@@ -1009,11 +1059,23 @@ function buildNav(){
 function renderSheet(){
   const order = (state.tabOrder && state.tabOrder.length) ? state.tabOrder : PRIMARY;
   const rest = MODULES.filter(m=>!order.includes(m.id));
-  $("#sheetList").innerHTML =
-    (rest.length
-      ? rest.map(m=>`<div class="sheet-row ${m.id===current?'active':''}" onclick="selectModule('${m.id}')"><span class="sheet-badge" style="background:${m.color}">${m.ic}</span><span class="sheet-name">${m.name}</span>${m.id===current?'<span class="sheet-check">✓</span>':''}</div>`).join("")
-      : '<div class="sheet-row" style="color:var(--muted);cursor:default;font-size:13px;padding:12px 16px">已全部固定到底部栏</div>')
-    + `<div class="sheet-row divider" onclick="closeSheet();openEdit()" style="color:var(--green-d);font-weight:600"><span class="sheet-badge" style="background:rgba(143,191,111,.18)">✏️</span><span class="sheet-name">自定义底部栏</span></div>`;
+  let html = "";
+  if(!rest.length){
+    html = '<div class="sheet-row" style="color:var(--muted);cursor:default;font-size:13px;padding:12px 16px">已全部固定到底部栏</div>';
+  } else {
+    // 按类别分组（核心日常已在底部栏，这里只列其余模块），解决高低频混放
+    CATS.forEach(cat=>{
+      const list = cat.ids.filter(id=>rest.some(m=>m.id===id));
+      if(!list.length) return;
+      html += `<div class="sheet-cat">${cat.name}</div>`;
+      html += list.map(id=>{
+        const m=MODULES.find(x=>x.id===id);
+        return `<div class="sheet-row ${id===current?'active':''}" onclick="selectModule('${id}')"><span class="sheet-badge" style="background:${m.color}">${m.ic}</span><span class="sheet-name">${m.name}</span>${id===current?'<span class="sheet-check">✓</span>':''}</div>`;
+      }).join("");
+    });
+  }
+  html += `<div class="sheet-row divider" onclick="closeSheet();openEdit()" style="color:var(--green-d);font-weight:600"><span class="sheet-badge" style="background:rgba(143,191,111,.18)">✏️</span><span class="sheet-name">自定义底部栏</span></div>`;
+  $("#sheetList").innerHTML = html;
 }
 function openSheet(){ renderSheet(); $("#sheetMask").classList.add("on"); }
 function closeSheet(){ $("#sheetMask").classList.remove("on"); }
@@ -1133,6 +1195,17 @@ function toggleCdAdd(){
   if(el) el.style.display = (el.style.display==="none"||el.style.display==='') ? "flex":"none";
 }
 
+/* SVG 环形进度（可视化元素） */
+function ringSVG(pct, color){
+  pct=Math.max(0,Math.min(100,pct||0));
+  const r=34, c=2*Math.PI*r, off=c*(1-pct/100);
+  return `<svg viewBox="0 0 84 84" width="84" height="84">
+    <circle cx="42" cy="42" r="${r}" fill="none" stroke="#EFE6D6" stroke-width="8"/>
+    <circle cx="42" cy="42" r="${r}" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
+  </svg>`;
+}
+function dayKeyStr(d){ const x=d||new Date(); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`; }
+
 /* ---------------- 各模块视图 ---------------- */
 const VIEWS = {
   home:()=>{
@@ -1146,7 +1219,7 @@ const VIEWS = {
     const quote = todayQuote();
     sortCountdowns();
 
-    /* 快捷卡片数据 */
+    /* 联动数据：从各模块聚合到首页 */
     const habitTotal = state.habit.length;
     const todayIdx = (new Date()).getDay();
     const habitTodayDone = state.habit.filter(h=>h.week && h.week[todayIdx]).length;
@@ -1157,8 +1230,32 @@ const VIEWS = {
     const saved = state.money.saved||0;
     const goal = state.money.goal||1;
     const moneyPct = Math.min(100, Math.round(saved/goal*100));
+    // 健康管理：今日运动消耗（fit 记录按今日日期累计）
+    const todayStr = dayKeyStr(now);
+    const fitBurn = state.fit.filter(f=>f.date===todayStr).reduce((s,f)=>s+(+f.kcal||0),0);
+    const fitPct = Math.min(100, Math.round(fitBurn/300*100));
+    // 学习管理：平均进度
+    const studyAvg = state.study.length? Math.round(state.study.reduce((s,c)=>s+(+c.progress||0),0)/state.study.length) : 0;
+    // 今日整体完成度（打卡 + 任务 + 存钱）
+    const overallPct = Math.round((habitPct+taskPct+moneyPct)/3);
     const lastMood = state.mood[state.mood.length-1];
-    const lastMoodTxt = lastMood ? `${lastMood.emoji} ${lastMood.label}` : "未记录";
+
+    /* 概览小卡（点击进入对应模块，形成联动） */
+    const ovCells = [
+      {id:"habit", ic:"✅", lab:"今日打卡", num:habitTodayDone+"/"+habitTotal, unit:" 项", pct:habitPct},
+      {id:"tasks", ic:"📝", lab:"任务进度", num:taskDone+"/"+taskTotal, unit:" 条", pct:taskPct},
+      {id:"money", ic:"💰", lab:"存钱进度", num:moneyPct, unit:"%", pct:moneyPct},
+      {id:"mood",  ic:"🌈", lab:lastMood?esc(lastMood.label):"未记录", num:lastMood?esc(lastMood.emoji):"–", unit:"", pct:null},
+      {id:"fit",   ic:"💪", lab:"今日消耗", num:fitBurn, unit:" kcal", pct:fitPct},
+      {id:"study", ic:"🎓", lab:"学习进度", num:studyAvg, unit:"%", pct:studyAvg},
+    ];
+    const ovHTML = ovCells.map(c=>`
+      <div class="ov-cell" onclick="selectModule('${c.id}')">
+        <div class="ov-ic">${c.ic}</div>
+        <div class="ov-num">${c.num}<small>${c.unit}</small></div>
+        <div class="ov-lab">${c.lab}</div>
+        ${c.pct!=null?`<div class="ov-bar"><i style="width:${c.pct}%"></i></div>`:""}
+      </div>`).join("");
 
     /* 最近记录：合并心情/便签/树洞，按时间倒序取 3 条 */
     const items=[];
@@ -1179,27 +1276,31 @@ const VIEWS = {
     return `
     <div class="home-wrap">
 
-      <!-- Hero 卡片：问候 + 大时钟 + 日期 + 农历 -->
+      <!-- Hero 卡片：问候 + 大时钟 + 日期 + 农历 + 快捷入口 -->
       <div class="home-hero">
         <div class="greet">
           <span class="hi">Hi, ${esc(greetText)} ${userName()}</span>
           <span class="em">${greetIc}</span>
         </div>
-        <div class="badge">🏡 春日部·你自己的小天地</div>
+        <div class="badge">🏡 你自己的小天地</div>
         <div class="home-clock" id="homeClock">--:--:--</div>
         <div class="home-date">${dateStr}<span class="lunar">· 农历 ${lunarStr}</span></div>
-
-        <!-- 今日金句 -->
         <div class="home-q">
           <div class="lbl"><span>💬 今日金句</span><span class="pill">⚡ 每日共勉</span></div>
           <div class="cn">${esc(quote.cn)}</div>
           <div class="en">${esc(quote.en)}</div>
         </div>
+        <div class="quick-acts">
+          <div class="qa" onclick="selectModule('habit')"><span class="qa-ic">✅</span><span class="qa-lab">打卡</span></div>
+          <div class="qa" onclick="selectModule('tasks')"><span class="qa-ic">📝</span><span class="qa-lab">任务</span></div>
+          <div class="qa" onclick="selectModule('mood')"><span class="qa-ic">🌈</span><span class="qa-lab">心情</span></div>
+          <div class="qa" onclick="selectModule('money')"><span class="qa-ic">💰</span><span class="qa-lab">记账</span></div>
+        </div>
       </div>
 
       <!-- 倒计时 -->
       <div class="home-sec">
-        <h3>⏳ 倒计时 <button class="add-btn" onclick="toggleCdAdd()">+ 添加</button></h3>
+        <div class="sec-h"><span class="sec-ic" style="background:#E7B65A">⏳</span><span class="sec-title">倒计时</span><button class="add-btn" onclick="toggleCdAdd()">+ 添加</button></div>
         ${(state.countdowns||[]).length?(state.countdowns).map(c=>{
           const days = daysUntil(c.date);
           const past = days < 0;
@@ -1220,39 +1321,22 @@ const VIEWS = {
         </div>
       </div>
 
-      <!-- 快捷卡片网格 -->
+      <!-- 今日概览：环形进度 + 联动小卡 -->
       <div class="home-sec">
-        <h3>📊 今日状态</h3>
-        <div class="quick-grid">
-          <div class="q-cell" onclick="selectModule('habit')">
-            <div class="ico">✅</div>
-            <div class="lab">今日打卡</div>
-            <div class="num">${habitTodayDone}/${habitTotal}<small> 项</small></div>
-            <div class="bar"><i style="width:${habitPct}%"></i></div>
+        <div class="sec-h"><span class="sec-ic" style="background:#8FBF6F">📊</span><span class="sec-title">今日概览</span></div>
+        <div class="ov">
+          <div class="ov-ring">
+            ${ringSVG(overallPct, "#8FBF6F")}
+            <b>${overallPct}%</b>
+            <span class="ov-cap">完成度</span>
           </div>
-          <div class="q-cell" onclick="selectModule('tasks')">
-            <div class="ico">📝</div>
-            <div class="lab">任务进度</div>
-            <div class="num">${taskDone}/${taskTotal}<small> 条</small></div>
-            <div class="bar"><i style="width:${taskPct}%"></i></div>
-          </div>
-          <div class="q-cell" onclick="selectModule('money')">
-            <div class="ico">💰</div>
-            <div class="lab">存钱进度</div>
-            <div class="num">${moneyPct}<small>%</small></div>
-            <div class="bar"><i style="width:${moneyPct}%"></i></div>
-          </div>
-          <div class="q-cell" onclick="selectModule('mood')">
-            <div class="ico">🌈</div>
-            <div class="lab">最近心情</div>
-            <div class="num" style="font-size:15px">${esc(lastMoodTxt)}</div>
-          </div>
+          <div class="ov-grid">${ovHTML}</div>
         </div>
       </div>
 
       <!-- 最近记录 -->
       <div class="home-sec">
-        <h3>🕒 最近记录</h3>
+        <div class="sec-h"><span class="sec-ic" style="background:#F4A6A6">🕒</span><span class="sec-title">最近记录</span></div>
         ${recent.length?`<div class="recent">${recent.map(r=>`
           <div class="recent-row">
             <div class="em">${r.em}</div>
@@ -1266,7 +1350,7 @@ const VIEWS = {
 
       <!-- 今日趣味 -->
       <div class="home-sec">
-        <h3>✨ 今日趣味</h3>
+        <div class="sec-h"><span class="sec-ic" style="background:#8FB6DD">✨</span><span class="sec-title">今日趣味</span></div>
         <div class="fun-grid">
           <div class="fun-card" onclick="openFun('huangli')">
             <div class="fc-glow">📜</div>
@@ -1296,18 +1380,6 @@ const VIEWS = {
             <div class="fc-sub">心有所念，点开求一卦</div>
             <div class="fc-go">起卦 ›</div>
           </div>
-        </div>
-      </div>
-
-      <!-- 应用导览 -->
-      <div class="home-sec">
-        <h3>🧭 全部模块</h3>
-        <div class="quick-grid" style="grid-template-columns:repeat(3,1fr);gap:8px">
-          ${MODULES.filter(x=>x.id!=="home"&&x.id!=="settings").map(m=>`
-            <div class="q-cell" onclick="selectModule('${m.id}')" style="padding:10px">
-              <div class="ico">${m.ic}</div>
-              <div class="lab" style="margin-top:2px">${m.name}</div>
-            </div>`).join("")}
         </div>
       </div>
 
