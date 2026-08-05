@@ -503,6 +503,32 @@
   .cover-ph{display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; background:linear-gradient(135deg, hsl(var(--h),62%,60%), hsl(calc(var(--h) + 38),64%,50%)); text-shadow:0 1px 2px rgba(0,0,0,.18)}
   .song-feat .sf-cover.cover-ph{font-size:26px}
   .song-card .sc-cover.cover-ph{font-size:20px}
+  /* ---------- 歌词搜索 ---------- */
+  .lyric-box{border:1px solid var(--line); border-radius:18px; padding:16px; background:var(--card); margin-bottom:16px}
+  .lyric-box .lb-h{display:flex; justify-content:space-between; align-items:baseline; font-weight:700; font-size:15px; margin-bottom:12px; gap:8px}
+  .lyric-box .lb-tip{font-size:12px; color:var(--muted); font-weight:400; white-space:nowrap}
+  .lyric-bar{display:flex; gap:8px}
+  .lyric-bar input{flex:1; min-width:0; padding:10px 12px; border-radius:11px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:14px; outline:none}
+  .lyric-bar input:focus{border-color:var(--green)}
+  .lyric-bar .btn{white-space:nowrap}
+  .lyric-hits{margin-top:12px; display:flex; flex-direction:column; gap:8px}
+  .lh-row{display:flex; gap:12px; align-items:center; padding:9px 10px; border-radius:13px; border:1px solid var(--line); background:var(--bg); cursor:pointer; transition:.15s}
+  .lh-row:active{transform:scale(.99); border-color:var(--green)}
+  .lh-cw{position:relative; width:48px; height:48px; flex:0 0 48px}
+  .lh-c{width:48px; height:48px; border-radius:11px; object-fit:cover; flex:0 0 48px; background:var(--bg); box-shadow:0 3px 8px rgba(0,0,0,.07)}
+  .lh-cw .lh-c.cover-ph{position:absolute; inset:0; font-size:18px}
+  .lh-info{flex:1; min-width:0}
+  .lh-name{font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .lh-singer{font-size:12px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .lh-dur{font-size:12px; color:var(--muted); flex:0 0 auto}
+  .lv-load{font-size:13px; color:var(--muted); padding:10px 2px}
+  .lv-hint{font-size:13px; color:var(--muted); padding:14px 2px; text-align:center}
+  .lyric-view{display:flex; flex-direction:column}
+  .lv-h{display:flex; align-items:center; gap:10px; margin-bottom:10px}
+  .lv-back{font-size:13px; color:var(--green-d); background:color-mix(in srgb,var(--green) 14%,transparent); border:none; border-radius:18px; padding:5px 12px; cursor:pointer; font-weight:600; white-space:nowrap}
+  .lv-meta{flex:1; min-width:0; font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .lv-text{max-height:300px; overflow:auto; font-size:14px; line-height:2; color:var(--ink); white-space:pre-wrap; word-break:break-word; padding:14px 16px; background:var(--bg); border-radius:13px; border:1px solid var(--line)}
+  .lv-play{margin-top:12px; text-decoration:none; justify-content:center; display:inline-flex}
 
   /* ---------- 学习管理：名言名句小框 ---------- */
   .famous-box{background:color-mix(in srgb, var(--gold) 14%, transparent); border:1px solid var(--line);
@@ -653,6 +679,7 @@ let famousIdx = 0;
 let songIdx = 0;
 let songFilter = "全部";
 let songTab = "hot";
+let lyricQ="", lyricHits=[], lyricOpen=-1, lyricOpenHit=null, lyricLRC="", lyricState="none", lyricLoad="none", lyricErr="";
 function famousQuote(){ return FAMOUS[famousIdx % FAMOUS.length]; }
 function shuffleFamous(){ famousIdx = Math.floor(Math.random()*FAMOUS.length); render(); }
 
@@ -1493,6 +1520,40 @@ const VIEWS = {
         `:'<div class="empty" style="padding:4px 0">没有可推荐的音乐</div>'}
       </div>
 
+      <div class="lyric-box">
+        <div class="lb-h"><span>🔍 歌词搜索</span><span class="lb-tip">搜歌名 · 看完整歌词</span></div>
+        ${lyricOpen!==-1 ? `
+          <div class="lyric-view">
+            <div class="lv-h">
+              <button class="lv-back" onclick="closeLyric()">‹ 返回</button>
+              <div class="lv-meta">${esc((lyricOpenHit&&lyricOpenHit.name)||"")}${(lyricOpenHit&&lyricOpenHit.singer)?' · '+esc(lyricOpenHit.singer):''}</div>
+            </div>
+            ${lyricLoad==="loading"?'<div class="lv-load">歌词加载中…</div>'
+              :lyricLoad==="err"?'<div class="lv-load">歌词获取失败，<span style="color:var(--green-d);cursor:pointer" onclick="openLyric(\''+esc(lyricOpen)+'\')">点击重试</span></div>'
+              :(lyricLRC?`<div class="lv-text">${esc(parseLRC(lyricLRC))}</div>`:'<div class="lv-load">暂无歌词</div>')}
+            <a class="btn ghost lv-play" href="${esc(qqPlayUrl(lyricOpen))}" target="_blank" rel="noopener">▶ 试听 / 跳转</a>
+          </div>
+        ` : `
+          <div class="lyric-bar">
+            <input id="lyricSearch" placeholder="输入歌名，如：晴天 / 周杰伦" value="${esc(lyricQ)}" onkeydown="if(event.key==='Enter')searchLyric()"/>
+            <button class="btn" onclick="searchLyric()">搜索</button>
+          </div>
+          ${lyricState==="loading"?'<div class="lv-load">搜索中…</div>'
+            :lyricState==="err"?'<div class="lv-load">'+esc(lyricErr||"搜索失败")+'</div>'
+            :lyricState==="empty"?'<div class="lv-load">没有找到相关歌曲，换个歌名试试～</div>'
+            :lyricHits.length?`<div class="lyric-hits">${lyricHits.map(h=>`
+              <div class="lh-row" onclick="openLyric('${esc(h.songmid)}')">
+                ${hitCover(h)}
+                <div class="lh-info">
+                  <div class="lh-name">${esc(h.name)}</div>
+                  <div class="lh-singer">${esc(h.singer||"未知歌手")}${h.album?(' · '+esc(h.album)):''}</div>
+                </div>
+                <div class="lh-dur">${esc(fmtDur(h.interval))}</div>
+              </div>`).join("")}</div>`
+            :'<div class="lv-hint">搜一首歌，查看完整歌词与试听～</div>'}
+        `}
+      </div>
+
       <div class="song-tabs">
         <span class="song-tab ${!isMine?'on':''}" onclick="setSongTab('hot')">🔥 热门推荐</span>
         <span class="song-tab ${isMine?'on':''}" onclick="setSongTab('mine')">⭐ 我的收藏 (${mine.length})</span>
@@ -1975,6 +2036,65 @@ function shuffleSong(){ const n=(HOT_SONGS.length + (state.read||[]).length); if
 function setSongFilter(s){ songFilter=s; render(); }
 function setSongTab(t){ songTab=t; render(); }
 function collectHot(idx){ const h=HOT_SONGS[idx]; if(!h) return; if((state.read||[]).some(x=>x.title===h.title && x.singer===h.singer)) return; state.read.push({title:h.title,singer:h.singer,style:h.style,lyric:h.lyric,url:h.url,ts:Date.now()}); save(); render(); }
+
+/* ---------- 歌词搜索（QQ搜索JSONP + injahow lrc） ---------- */
+function searchLyric(){
+  const el=document.getElementById("lyricSearch");
+  const q=el?el.value.trim():"";
+  if(!q) return;
+  lyricQ=q; lyricState="loading"; lyricHits=[]; lyricOpen=-1; render();
+  jsonpQQ(q, function(res){
+    try{
+      const list=(res&&res.data&&res.data.song&&res.data.song.list)||[];
+      lyricHits=list.map(s=>({
+        songmid:s.songmid||"",
+        name:s.songname||"",
+        singer:(s.singer||[]).map(x=>x.name).join("/"),
+        album:(s.albumname||""),
+        albummid:(s.albummid||""),
+        interval:(s.interval||0)
+      }));
+      lyricState=lyricHits.length?"ok":"empty";
+    }catch(e){ lyricState="err"; lyricErr="解析失败，请重试"; }
+    render();
+  });
+}
+function openLyric(mid){
+  if(!mid) return;
+  lyricOpenHit=lyricHits.find(x=>x.songmid===mid)||{songmid:mid,name:"",singer:""};
+  lyricOpen=mid; lyricLRC=""; lyricLoad="loading"; render();
+  fetch("https://api.injahow.cn/meting/?type=lrc&server=tencent&id="+encodeURIComponent(mid))
+    .then(r=>r.text())
+    .then(t=>{ lyricLRC=t||""; lyricLoad=(t&&(t.indexOf("[ti")>-1||t.indexOf("[00")>-1))?"ok":"err"; render(); })
+    .catch(e=>{ lyricLoad="err"; render(); });
+}
+function closeLyric(){ lyricOpen=-1; lyricLRC=""; lyricLoad="none"; render(); }
+function qqPlayUrl(mid){ return "https://y.qq.com/n/ryqq/songDetail/"+encodeURIComponent(mid); }
+function jsonpQQ(kw, cb){
+  const old=document.getElementById("qqjp"); if(old) old.remove();
+  const cbName="qqSearchCb_"+Date.now();
+  window[cbName]=function(res){ try{cb(res);}finally{ delete window[cbName]; const s=document.getElementById("qqjp"); if(s) s.remove(); } };
+  const s=document.createElement("script");
+  s.id="qqjp";
+  s.src="https://c.y.qq.com/soso/fcgi-bin/client_search_cp?p=1&n=12&w="+encodeURIComponent(kw)+"&jsonpCallback="+cbName;
+  s.onerror=function(){ delete window[cbName]; if(s.parentNode) s.remove(); lyricState="err"; lyricErr="搜索服务暂不可用"; render(); };
+  document.body.appendChild(s);
+}
+function fmtDur(sec){ sec=+sec||0; const m=Math.floor(sec/60), s=sec%60; return m+":"+(s<10?"0":"")+s; }
+function parseLRC(lrc){
+  if(!lrc) return "";
+  return lrc.split("\n").map(l=>{
+    return l.replace(/^\[\d+:\d+\.\d+\]/g,"").replace(/^\[\d+:\d+\]/g,"").replace(/^\s*ti:/i,"").replace(/^\s*ar:/i,"").replace(/^\s*al:/i,"").replace(/^\s*by:/i,"").replace(/^\s*offset:.*$/i,"").trim();
+  }).filter(Boolean).join("\n");
+}
+function hitCover(h){
+  const initial=String(h.name||"♪").charAt(0)||"♪";
+  if(h.albummid){
+    const url="https://y.gtimg.cn/music/photo_new/T002R300x300M000"+h.albummid+".jpg";
+    return `<span class="lh-cw"><img class="lh-c" src="${esc(url)}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"/><span class="lh-c cover-ph" style="display:none">${esc(initial)}</span></span>`;
+  }
+  return `<span class="lh-c cover-ph">${esc(initial)}</span>`;
+}
 function addFood(){
   const name=($("#fd-name").value||"").trim();
   const g=parseFloat($("#fd-g").value)||0;
