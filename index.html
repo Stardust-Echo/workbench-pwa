@@ -551,6 +551,20 @@
     background:rgba(0,0,0,.55); color:#fff; border-radius:50%; font-size:12px; cursor:pointer}
   .entry-img{margin-top:8px; border-radius:10px; overflow:hidden; border:1px solid var(--line)}
   .entry-img img{width:100%; max-height:260px; object-fit:cover; display:block}
+
+  /* ---------- 拍照识别食物热量 ---------- */
+  .cam{background:var(--card); border-style:solid; border-color:var(--green); color:var(--green-d)}
+  .vision-set{display:flex; flex-direction:column; gap:8px; margin-top:10px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#FBF7EF}
+  .vision-set input{width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:9px; background:var(--card); color:var(--ink); font-size:13px; outline:none}
+  .vision-set code{background:#efe7d6; padding:1px 5px; border-radius:5px; font-size:12px}
+  .rec-prev{position:relative; width:100%; max-width:240px; margin-top:8px; border-radius:12px; overflow:hidden; border:1px solid var(--line)}
+  .rec-prev img{width:100%; display:block}
+  .rec-prev .x{position:absolute; top:4px; right:4px; width:22px; height:22px; line-height:22px; text-align:center; background:rgba(0,0,0,.55); color:#fff; border-radius:50%; font-size:13px; cursor:pointer}
+  .rec-list{margin-top:10px; display:flex; flex-direction:column; gap:8px}
+  .rec-row{display:flex; align-items:center; gap:10px; font-size:14px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; background:var(--card)}
+  .rec-row .fi{font-size:17px}
+  .rec-row .txt{flex:1; min-width:0}
+  .rec-row .meta{color:var(--muted); font-size:13px; white-space:nowrap}
 </style>
 </head>
 <body>
@@ -1031,6 +1045,7 @@ function defaultState(){ return {
   read:[{title:"也想",singer:"告五人",style:"治愈",reason:"深夜一个人听刚刚好，旋律很轻，像在轻轻拍肩膀。",ts:Date.now()},{title:"起风了",singer:"买辣椒也用券",style:"怀旧",reason:"青春回忆杀，每次听都起鸡皮疙瘩。",ts:Date.now()-86400000}],
   fit:[{date:"08-02",type:"力量",note:"胸 + 三头，45min",kcal:320},{date:"08-01",type:"有氧",note:"跑步 5km",kcal:410}],
   foodLog:[],
+  vision:{key:"", base:"https://openrouter.ai/api/v1", model:"nvidia/nemotron-nano-12b-v2-vl:free"},
   study:[{title:"TypeScript 进阶",progress:40},{title:"系统设计入门",progress:15}],
   project:[{name:"工作台 PWA",status:"进行中",note:"manifest + service worker"},{name:"需求文档 v2",status:"待启动",note:"本周内产出"}],
   idea:["用 PWA 把工作台装进手机主屏","记账模块加基金净值曲线","便签支持语音速记"],
@@ -1646,6 +1661,37 @@ const VIEWS = {
         <div class="hl-cell"><div class="hl-num">${intake-burn>=0?'+':''}${Math.round(intake-burn)}</div><div class="hl-lab">净摄入 (kcal)</div></div>
       </div>
 
+      <div class="card">
+        <h2>📷 拍照识别热量 <span class="tag">拍食物 · AI 估算</span></h2>
+        <div class="add fit-add">
+          <label class="img-btn cam">📸 拍照/上传<input type="file" accept="image/*" capture="environment" hidden onchange="onFoodImg(this)"/></label>
+          <button class="btn" onclick="recognizeFood()">🔍 识别食物</button>
+          <button class="btn ghost sm" onclick="toggleVisionSet()">⚙ 设置</button>
+        </div>
+        ${foodImg?`<div class="rec-prev"><img src="${foodImg}"/><span class="x" onclick="clearFoodImg()">✕</span></div>`:''}
+        ${visionSetOpen?`
+          <div class="vision-set">
+            <input id="v-key" placeholder="视觉识别 API Key" value="${esc((state.vision&&state.vision.key)||'')}"/>
+            <input id="v-base" placeholder="API Base URL" value="${esc((state.vision&&state.vision.base)||'https://openrouter.ai/api/v1')}"/>
+            <input id="v-model" placeholder="视觉模型" value="${esc((state.vision&&state.vision.model)||'nvidia/nemotron-nano-12b-v2-vl:free')}"/>
+            <div class="set-hint">推荐免费：openrouter.ai 注册拿 Key，模型用 <code>nvidia/nemotron-nano-12b-v2-vl:free</code>（支持浏览器跨域）。也可填任意 OpenAI 兼容接口（如 OpenAI / 通义 / DeepSeek）。</div>
+            <button class="btn sm" onclick="saveVision()">保存设置</button>
+          </div>`:''}
+        ${recState==='loading'?'<div class="lv-load">识别中…（拍照后请稍候）</div>'
+          :recState==='err'?`<div class="lv-load">${esc(recErr||'识别失败，请重试')}</div>`
+          :recList.length?`
+            <div class="rec-list">
+              ${recList.map((f,i)=>`<div class="rec-row">
+                <span class="fi">🍽️</span>
+                <div class="txt"><b>${esc(f.name)}</b> · ${esc(f.grams)}g · ~${estKcal(f)} kcal</div>
+                <div class="del" onclick="addRecFood(${i})">加入</div>
+              </div>`).join('')}
+            </div>
+            <div style="margin-top:8px"><button class="btn ghost sm" onclick="addAllRec()">全部加入今日摄入</button></div>
+            <div class="hint">识别结果仅供参考，估算可能有偏差，建议结合食材库核对。</div>`
+          :''}
+      </div>
+
       <h3 class="sub-h">🏃 运动记录</h3>
       <div class="add fit-add">
         <input id="f-date" type="date" value="${esc(dateV)}" class="fit-date" style="width:auto"/>
@@ -1978,6 +2024,8 @@ const VIEWS = {
 /* ---------------- 交互 ---------------- */
 function uid(){return Date.now()}
 let moodImg=null, ideaImg=null, noteImg=null, whisperImg=null, songImg=null;
+/* 拍照识别食物热量：UI 状态 */
+let foodImg="", visionSetOpen=false, recState="none", recErr="", recList=[];
 /* 读取并自动压缩图片（最长边 900px，JPEG 0.7），避免 localStorage 爆炸 */
 function readImage(file, cb){
   if(!file) return;
@@ -2127,6 +2175,72 @@ function addFood(){
   save(); render();
 }
 function delFood(i){ if(!state.foodLog||i<0||i>=state.foodLog.length) return; state.foodLog.splice(i,1); save(); render(); }
+
+/* ---------- 拍照识别食物热量 ---------- */
+function onFoodImg(inp){
+  if(!inp.files || !inp.files[0]) return;
+  readImage(inp.files[0], d=>{ foodImg=d; recList=[]; recState="none"; recErr=""; render(); });
+}
+function clearFoodImg(){ foodImg=""; recList=[]; recState="none"; recErr=""; render(); }
+function toggleVisionSet(){ visionSetOpen=!visionSetOpen; render(); }
+function saveVision(){
+  const key=($("#v-key").value||"").trim();
+  const base=($("#v-base").value||"").trim()||"https://openrouter.ai/api/v1";
+  const model=($("#v-model").value||"").trim()||"nvidia/nemotron-nano-12b-v2-vl:free";
+  state.vision={key, base, model};
+  save(); visionSetOpen=false; render();
+}
+const FOOD_VISION_PROMPT = "请识别图片中的食物。对每种可识别的食物，估算它的重量(克)和热量(千卡)。只输出一个 JSON 数组，元素格式为 {\"name\":\"食物中文名\",\"grams\":重量数值,\"kcal\":热量数值}，不要任何额外文字、不要 markdown 代码块。如果图片里没有食物，输出空数组 []。";
+function estKcal(f){ return Math.round((f.kcal!=null)? f.kcal : (FOOD_CAL[f.name]||0)*f.grams/100); }
+function recognizeFood(){
+  if(!foodImg){ recErr="请先拍照或上传一张食物照片"; recState="err"; render(); return; }
+  const v=state.vision||{};
+  if(!v.key){ recErr="请先在「⚙ 设置」里填入视觉识别 API Key（OpenRouter 免费 Key 即可）"; recState="err"; visionSetOpen=true; render(); return; }
+  recState="loading"; recErr=""; render();
+  const base=(v.base||"https://openrouter.ai/api/v1").replace(/\/$/,'')+"/chat/completions";
+  const body={ model:v.model, messages:[{role:"user", content:[
+    {type:"image_url", image_url:{url:foodImg}},
+    {type:"text", text:FOOD_VISION_PROMPT}
+  ]}]};
+  fetch(base, {method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+v.key}, body:JSON.stringify(body)})
+    .then(r=>r.json().then(j=>({ok:r.ok, j})))
+    .then(({ok,j})=>{
+      if(!ok || !j || j.error) throw new Error((j&&j.error&&(j.error.message||j.error))||"接口返回异常");
+      let txt="";
+      try{ txt=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||""; }catch(e){ txt=""; }
+      txt=String(txt||"").trim().replace(/^```(?:json)?/i,"").replace(/```$/,"").trim();
+      const s=txt.indexOf("["), e=txt.lastIndexOf("]");
+      if(s<0||e<0) throw new Error("未能解析出食物列表");
+      const arr=JSON.parse(txt.slice(s,e+1));
+      if(!Array.isArray(arr)||!arr.length){ recState="err"; recErr="没认出食物，换个角度再拍一张试试～"; recList=[]; render(); return; }
+      recList=arr.map(x=>({name:String(x.name||"食物").trim()||"食物", grams:Number(x.grams)||0, kcal:x.kcal!=null?Number(x.kcal):null}))
+                 .filter(x=>x.grams>0);
+      if(!recList.length){ recState="err"; recErr="没认出份量，换个角度再拍一张试试～"; render(); return; }
+      recState="list"; render();
+    })
+    .catch(err=>{ recState="err"; recErr=(err&&err.message)||"识别失败，请重试"; render(); });
+}
+function addRecFood(i){
+  if(i<0||i>=recList.length) return;
+  const f=recList[i];
+  const per100 = (f.kcal!=null)? undefined : (FOOD_CAL[f.name]||0);
+  const kcal = (f.kcal!=null)? f.kcal : (FOOD_CAL[f.name]||0)*f.grams/100;
+  state.foodLog = state.foodLog||[];
+  state.foodLog.push({name:f.name, g:f.grams, per100, kcal});
+  recList.splice(i,1);
+  save(); render();
+}
+function addAllRec(){
+  state.foodLog = state.foodLog||[];
+  recList.forEach(f=>{
+    const per100 = (f.kcal!=null)? undefined : (FOOD_CAL[f.name]||0);
+    const kcal = (f.kcal!=null)? f.kcal : (FOOD_CAL[f.name]||0)*f.grams/100;
+    state.foodLog.push({name:f.name, g:f.grams, per100, kcal});
+  });
+  recList=[]; recState="none";
+  save(); render();
+}
+
 function normUrl(u){
   u=(u||"").trim();
   if(!u) return "";
