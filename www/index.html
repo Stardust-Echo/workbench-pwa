@@ -137,6 +137,7 @@
     display:grid;place-items:center;font-size:12px;color:var(--muted);cursor:pointer}
   .day.on{background:var(--green);color:#fff;border-color:var(--green)}
   .habit-badge{display:inline-block;font-size:11px;background:#EAF3E2;color:#5a7a3a;border:1px solid #D5E6C5;border-radius:8px;padding:1px 7px;margin-left:8px;font-weight:600;vertical-align:middle}
+  .fit-badge{display:inline-block;font-size:11px;background:#F3EAF8;color:#7a4a9a;border:1px solid #E0CCEC;border-radius:8px;padding:1px 7px;margin-left:8px;font-weight:600;vertical-align:middle}
   .hint{font-size:12px;color:var(--muted);background:#FBF7EF;border:1px solid var(--line);border-radius:8px;padding:7px 10px;margin:8px 0 2px}
 
   .moods{display:flex;gap:10px;flex-wrap:wrap}
@@ -1441,11 +1442,15 @@ const VIEWS = {
     const pct= total? Math.round(done/total*100):0;
     const dayLabel = state.habitTaskDate? shortDate(state.habitTaskDate): "今天";
     const hn = state.tasks.filter(t=>t.habit).length;
+    const fn = state.tasks.filter(t=>t.fit).length;
+    const hints=[];
+    if(hn) hints.push(`🔁 ${hn} 条每日习惯`);
+    if(fn) hints.push(`🏃 ${fn} 条今日运动`);
     return `
     <div class="card">
       <h2>📝 任务清单 <span class="tag">${dayLabel}</span><span class="tag">${done}/${total} 已完成</span></h2>
       ${total?`<div class="progress"><i style="width:${pct}%"></i></div>`:""}
-      ${hn?`<div class="hint">🔁 含 ${hn} 条每日习惯 · 次日自动刷新</div>`:""}
+      ${hints.length?`<div class="hint">${hints.join(" · ")} · 次日自动刷新</div>`:""}
       <div class="add">
         <input id="t-in" placeholder="添加一条任务，回车提交" />
         <button class="btn" onclick="addTask()">添加</button>
@@ -1453,7 +1458,7 @@ const VIEWS = {
       ${total?state.tasks.map(t=>`
         <div class="row ${t.done?'done':''}">
           <div class="chk ${t.done?'on':''}" onclick="toggleTask(${t.id})">✓</div>
-          <div class="txt">${esc(t.text)}${t.habit?'<span class="habit-badge">🔁 习惯</span>':''}</div>
+          <div class="txt">${esc(t.text)}${t.habit?'<span class="habit-badge">🔁 习惯</span>':''}${t.fit?'<span class="fit-badge">💪 运动</span>':''}</div>
           <div class="del" onclick="delTask(${t.id})">删除</div>
         </div>`).join(""):'<div class="empty">还没有任务，加一条吧～</div>'}
     </div>`;
@@ -2022,7 +2027,8 @@ const VIEWS = {
 };
 
 /* ---------------- 交互 ---------------- */
-function uid(){return Date.now()}
+let _uidc=0;
+function uid(){return Date.now()*1000+(++_uidc%1000)}
 let moodImg=null, ideaImg=null, noteImg=null, whisperImg=null, songImg=null;
 /* 拍照识别食物热量：UI 状态 */
 let foodImg="", visionSetOpen=false, recState="none", recErr="", recList=[];
@@ -2063,9 +2069,9 @@ function addFit(){
   if(typeof fitEditIdx==="number" && fitEditIdx>=0 && state.fit[fitEditIdx]){
     const f=state.fit[fitEditIdx]; f.date=date; f.type=type; f.note=note; f.kcal=kcal;
   } else {
-    state.fit.push({date, type, note, kcal});
+    state.fit.push({id:uid(),date, type, note, kcal});
   }
-  fitEditIdx=-1; save(); render();
+  fitEditIdx=-1; syncFitTasks(); render();
 }
 function addSong(){
   const title=($("#s-title").value||"").trim();
@@ -2258,7 +2264,7 @@ function addStudy(){
   save(); render();
 }
 function delStudy(i){ if(i<0||i>=state.study.length) return; state.study.splice(i,1); save(); render(); }
-function delFit(i){ if(i<0||i>=state.fit.length) return; state.fit.splice(i,1); if(fitEditIdx===i) fitEditIdx=-1; save(); render(); }
+function delFit(i){ if(i<0||i>=state.fit.length) return; state.fit.splice(i,1); if(fitEditIdx===i) fitEditIdx=-1; syncFitTasks(); render(); }
 function editFit(i){ fitEditIdx=i; render(); const el=$("#f-type"); if(el) el.focus(); }
 function cancelFitEdit(){ fitEditIdx=-1; render(); }
 function bind(){
@@ -2278,6 +2284,23 @@ function syncHabitTasks(){
   state.tasks=state.tasks.filter(t=>!t.habit);
   state.habit.forEach(h=>state.tasks.push({id:uid(),text:h.name,done:false,habit:true,hid:h.id,day:today}));
   state.habitTaskDate=today; save();
+}
+/* 健康管理 ↔ 任务清单联动：今日运动记录生成成已完成任务，次日自动刷新 */
+function fitTaskLabel(type,note,kcal){
+  let s="🏃 ";
+  if(type) s+=type;
+  if(note) s+=(type?" · ":"")+note;
+  if(kcal) s+=" · "+kcal+"kcal";
+  return s;
+}
+function syncFitTasks(){
+  const today=dayKey();
+  state.fit.forEach(f=>{ if(!f.id) f.id=uid(); });
+  state.tasks=state.tasks.filter(t=>!t.fit);
+  state.fit.filter(f=>f.date===today).forEach(f=>{
+    state.tasks.push({id:uid(),text:fitTaskLabel(f.type,f.note,f.kcal),done:true,fit:true,fid:f.id,day:today});
+  });
+  save();
 }
 function addHabit(){const v=$("#h-in").value.trim();if(!v)return;
   const h={id:uid(),name:v,week:[0,0,0,0,0,0,0]};
@@ -2423,7 +2446,7 @@ async function pullCloud(manual){
   if(!sb||!user) return;
   const {data,error}=await sb.from("workbench_state").select("data").eq("user_id",user.id).maybeSingle();
   if(error) return;
-  if(data && data.data){ state=data.data; save_local(); syncHabitTasks(); render(); }
+  if(data && data.data){ state=data.data; save_local(); syncHabitTasks(); syncFitTasks(); render(); }
   else { save(); } // 云端还没有 → 把本地推上去
   if(manual) renderAccount();
 }
@@ -2441,10 +2464,10 @@ async function pullCloud(manual){
   const savedCard = loadCard(); if(savedCard) document.documentElement.style.setProperty("--card", savedCard);
   const savedBtn = loadBtn(); if(savedBtn){ document.documentElement.style.setProperty("--btn", savedBtn); document.documentElement.style.setProperty("--btn-d", darken(savedBtn,.12)); }
   const savedFont = loadFont(); if(savedFont){ const f=FONTS.find(x=>x.key===savedFont); if(f) applyFont(f.stack); }
-  buildNav(); syncHabitTasks(); render(); renderAccount(); initSb();
+  buildNav(); syncHabitTasks(); syncFitTasks(); render(); renderAccount(); initSb();
   if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
-  // 每 60 秒检测跨天：次日自动清掉旧习惯任务、刷新今日清单
-  setInterval(()=>{ const t=dayKey(); if(state.habitTaskDate!==t){ syncHabitTasks(); if(current==="tasks"||current==="home") render(); } }, 60000);
+  // 每 60 秒检测跨天：次日自动清掉旧习惯/运动任务、刷新今日清单
+  setInterval(()=>{ const t=dayKey(); if(state.habitTaskDate!==t){ syncHabitTasks(); syncFitTasks(); if(current==="tasks"||current==="home") render(); } }, 60000);
 })();
 </script>
 </body>
