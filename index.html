@@ -1534,7 +1534,7 @@ const VIEWS = {
             ${lyricLoad==="loading"?'<div class="lv-load">歌词加载中…</div>'
               :lyricLoad==="err"?'<div class="lv-load">歌词获取失败，<span style="color:var(--green-d);cursor:pointer" onclick="openLyric(\''+esc(lyricOpen)+'\')">点击重试</span></div>'
               :(lyricLRC?`<div class="lv-text">${esc(parseLRC(lyricLRC))}</div>`:'<div class="lv-load">暂无歌词</div>')}
-            <a class="btn ghost lv-play" href="${esc(qqPlayUrl(lyricOpen))}" target="_blank" rel="noopener">▶ 试听 / 跳转</a>
+            <a class="btn ghost lv-play" href="${esc(nePlayUrl(lyricOpenHit&&lyricOpenHit.name))}" target="_blank" rel="noopener">▶ 试听 / 跳转</a>
           </div>
         ` : `
           <div class="lyric-bar">
@@ -2073,7 +2073,7 @@ function openLyric(mid){
     .catch(e=>{ lyricLoad="err"; render(); });
 }
 function closeLyric(){ lyricOpen=-1; lyricLRC=""; lyricLoad="none"; render(); }
-function qqPlayUrl(mid){ return "https://y.qq.com/n/ryqq/songDetail/"+encodeURIComponent(mid); }
+function nePlayUrl(name){ return "https://music.163.com/#/search/m/?s="+encodeURIComponent(name||"")+"&type=1"; }
 function jsonpQQ(kw, cb){
   const old=document.getElementById("qqjp"); if(old) old.remove();
   const cbName="qqSearchCb_"+Date.now();
