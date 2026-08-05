@@ -2084,7 +2084,8 @@ function fmtDur(sec){ sec=+sec||0; const m=Math.floor(sec/60), s=sec%60; return 
 function parseLRC(lrc){
   if(!lrc) return "";
   return lrc.split("\n").map(l=>{
-    return l.replace(/^\[\d+:\d+\.\d+\]/g,"").replace(/^\[\d+:\d+\]/g,"").replace(/^\s*ti:/i,"").replace(/^\s*ar:/i,"").replace(/^\s*al:/i,"").replace(/^\s*by:/i,"").replace(/^\s*offset:.*$/i,"").trim();
+    let t=l.replace(/\[[^\]]*\]/g,"").trim(); // 去掉所有 [..] 标签：时间轴 + ti/ar/al/by/offset 等元信息
+    return t;
   }).filter(Boolean).join("\n");
 }
 function hitCover(h){
