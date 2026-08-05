@@ -521,6 +521,9 @@
   .lh-name{font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .lh-singer{font-size:12px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .lh-dur{font-size:12px; color:var(--muted); flex:0 0 auto}
+  .lh-tag{font-size:11px; color:var(--muted); background:color-mix(in srgb,var(--muted) 15%,transparent); border-radius:8px; padding:1px 7px; margin-left:7px; font-weight:500; white-space:nowrap; flex:0 0 auto}
+  .lh-row.non{opacity:.82}
+  .lh-row.non .lh-cw .lh-c.cover-ph,.lh-row.non .lh-c.cover-ph{filter:saturate(.85)}
   .lv-load{font-size:13px; color:var(--muted); padding:10px 2px}
   .lv-hint{font-size:13px; color:var(--muted); padding:14px 2px; text-align:center}
   .lyric-view{display:flex; flex-direction:column}
@@ -1542,10 +1545,10 @@ const VIEWS = {
             :lyricState==="err"?'<div class="lv-load">'+esc(lyricErr||"搜索失败")+'</div>'
             :lyricState==="empty"?'<div class="lv-load">没有找到相关歌曲，换个歌名试试～</div>'
             :lyricHits.length?`<div class="lyric-hits">${lyricHits.map(h=>`
-              <div class="lh-row" onclick="openLyric('${esc(h.songmid)}')">
+              <div class="lh-row${isNonOriginal(h.name)?' non':''}" onclick="openLyric('${esc(h.songmid)}')">
                 ${hitCover(h)}
                 <div class="lh-info">
-                  <div class="lh-name">${esc(h.name)}</div>
+                  <div class="lh-name">${esc(h.name)}${h.tag?`<span class="lh-tag">${esc(h.tag)}</span>`:''}</div>
                   <div class="lh-singer">${esc(h.singer||"未知歌手")}${h.album?(' · '+esc(h.album)):''}</div>
                 </div>
                 <div class="lh-dur">${esc(fmtDur(h.interval))}</div>
@@ -2045,14 +2048,15 @@ function searchLyric(){
   lyricQ=q; lyricState="loading"; lyricHits=[]; lyricOpen=-1; render();
   jsonpQQ(q, function(res){
     try{
-      const list=(res&&res.data&&res.data.song&&res.data.song.list)||[];
-      lyricHits=list.map(s=>({
+      const raw=(res&&res.data&&res.data.song&&res.data.song.list)||[];
+      lyricHits=rankOriginal(raw).map(s=>({
         songmid:s.songmid||"",
         name:s.songname||"",
         singer:(s.singer||[]).map(x=>x.name).join("/"),
         album:(s.albumname||""),
         albummid:(s.albummid||""),
-        interval:(s.interval||0)
+        interval:(s.interval||0),
+        tag:versionTag(s.songname||"")
       }));
       lyricState=lyricHits.length?"ok":"empty";
     }catch(e){ lyricState="err"; lyricErr="解析失败，请重试"; }
@@ -2087,6 +2091,21 @@ function parseLRC(lrc){
     let t=l.replace(/\[[^\]]*\]/g,"").trim(); // 去掉所有 [..] 标签：时间轴 + ti/ar/al/by/offset 等元信息
     return t;
   }).filter(Boolean).join("\n");
+}
+/* ---------- 原唱优先：识别翻唱/伴奏/Live 等版本并后置 ---------- */
+function versionTag(name){
+  const m=String(name||"").match(/[（(]([^（）()]*)[）)]/);
+  return m?m[1].trim():"";
+}
+function isNonOriginal(name){
+  const v=versionTag(name);
+  if(!v) return false; // 无括号修饰视为原版
+  return /翻唱|cover|live|伴奏|dj|remix|混音|串烧|现场|卡拉|ktv|清唱|烟嗓|戏腔|纯音乐|改编|节目|和声|环绕|独奏|独唱|原声|钢琴|吉他|小提琴|古筝|版|加快|降调|变速|慢四|舞曲|轻音乐|女声|男声|车载|铃声|片段|试听|抖音|快手|网红|广场|催泪|伤感|治愈|说唱|rap/i.test(v);
+}
+function rankOriginal(list){
+  return (list||[]).map((s,i)=>({s,i,non:isNonOriginal(s.songname||"")?1:0}))
+    .sort((a,b)=>a.non-b.non || a.i-b.i)
+    .map(x=>x.s);
 }
 function hitCover(h){
   const initial=String(h.name||"♪").charAt(0)||"♪";
