@@ -67,7 +67,7 @@ function ts() {
 
 // 校验异步通知签名
 function verifyNotify(body) {
-  if (cfg.alipay.sandbox || !isReal()) return true;
+  if (!isReal()) return !!cfg.simulatorEnabled;
   const params = { ...body };
   const signVal = params.sign;
   const signType = params.sign_type;

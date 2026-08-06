@@ -1,4 +1,4 @@
-// workbench-pwa 服务端入口（真实支付后端）
+// workbench-pwa 服务端入口（同步支付记录后端）
 const path = require('path');
 const express = require('express');
 const cors = require('cors');

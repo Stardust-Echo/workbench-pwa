@@ -53,7 +53,7 @@ async function createH5({ outTradeNo, amount, description, notifyUrl, clientIp =
 
 // 校验回调签名（使用微信支付平台证书公钥）
 function verifyCallback(headers, rawBody) {
-  if (cfg.wechat.sandbox || !isReal()) return true; // 沙箱无真实回调
+  if (!isReal()) return !!cfg.simulatorEnabled; // 沙箱：仅当模拟开关开启才跳过验签，否则按未验签拒绝（防未授权标记已支付）
   const ts = headers['wechatpay-timestamp'];
   const nonce = headers['wechatpay-nonce'];
   const sig = headers['wechatpay-signature'];

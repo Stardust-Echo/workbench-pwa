@@ -1095,6 +1095,8 @@ function setSync(ok){ const d=document.querySelector(".sync-dot"); if(d) d.class
 let current = "home";
 const $ = s=>document.querySelector(s);
 const esc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+// 把字符串安全地塞进单引号包裹的 inline onclick JS 字符串（转义 \\ 与 ' 及 < >，防未授权文本逃逸执行）
+const jsStr = s => String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/</g, '\\u003c').replace(/>/g, '\\u003e');
 
 const PRIMARY = ["home","tasks","habit","mood","money"];
 
@@ -1572,7 +1574,7 @@ const VIEWS = {
             :lyricState==="err"?'<div class="lv-load">'+esc(lyricErr||"搜索失败")+'</div>'
             :lyricState==="empty"?'<div class="lv-load">没有找到相关歌曲，换个歌名试试～</div>'
             :lyricHits.length?`<div class="lyric-hits">${lyricHits.map(h=>`
-              <div class="lh-row${isNonOriginal(h.name)?' non':''}" onclick="openLyric('${esc(h.songmid)}')">
+              <div class="lh-row${isNonOriginal(h.name)?' non':''}" onclick="openLyric('${jsStr(h.songmid)}')">
                 ${hitCover(h)}
                 <div class="lh-info">
                   <div class="lh-name">${esc(h.name)}${h.tag?`<span class="lh-tag">${esc(h.tag)}</span>`:''}</div>
@@ -1655,7 +1657,7 @@ const VIEWS = {
         ${foodImg?`<div class="rec-prev"><img src="${foodImg}"/><span class="x" onclick="clearFoodImg()">✕</span></div>`:''}
         ${visionSetOpen?`
           <div class="vision-set">
-            <input id="v-key" placeholder="视觉识别 API Key" value="${esc((state.vision&&state.vision.key)||'')}"/>
+            <input id="v-key" type="password" autocomplete="off" placeholder="视觉识别 API Key" value="${esc((state.vision&&state.vision.key)||'')}"/>
             <input id="v-base" placeholder="API Base URL" value="${esc((state.vision&&state.vision.base)||'https://openrouter.ai/api/v1')}"/>
             <input id="v-model" placeholder="视觉模型" value="${esc((state.vision&&state.vision.model)||'nvidia/nemotron-nano-12b-v2-vl:free')}"/>
             <div class="set-hint">推荐免费：openrouter.ai 注册拿 Key，模型用 <code>nvidia/nemotron-nano-12b-v2-vl:free</code>（支持浏览器跨域）。也可填任意 OpenAI 兼容接口（如 OpenAI / 通义 / DeepSeek）。</div>
@@ -1763,8 +1765,8 @@ const VIEWS = {
       ${state.project.length?state.project.map((p,i)=>`
         <div class="row">
           <div class="txt"><b>${esc(p.name)}</b><div class="meta">${esc(p.note||'')}</div></div>
-          <div class="seg"><button class="${p.status==='进行中'?'on':''}" onclick="setProj('${esc(p.name)}','进行中')">进行中</button>
-          <button class="${p.status!=='进行中'?'on':''}" onclick="setProj('${esc(p.name)}','待启动')">待启动</button></div>
+          <div class="seg"><button class="${p.status==='进行中'?'on':''}" onclick="setProj('${jsStr(p.name)}','进行中')">进行中</button>
+          <button class="${p.status!=='进行中'?'on':''}" onclick="setProj('${jsStr(p.name)}','待启动')">待启动</button></div>
           <div class="del" onclick="delProj(${i})">删除</div>
         </div>`).join(""):'<div class="empty">还没有项目，加一个吧</div>'}
     </div>`,
@@ -2033,6 +2035,7 @@ const VIEWS = {
         <div class="set-t">☁️ 同步与备份</div>
         ${syncBlockHtml()}
       </div>
+      ${paySettingsHtml()}
     </div>`;
   },
 };
@@ -2063,6 +2066,20 @@ function syncBlockHtml(){
     <div class="row2">
       <button class="btn sm" onclick="toggleModal()">开启云同步</button>
     </div>`;
+}
+
+/* 设置板块里的「💳 同步支付记录（后端服务）」区块：整合原账户弹窗里的支付配置，统一收归设置页 */
+function paySettingsHtml(){
+  const c=getCfg()||{};
+  return `
+      <div class="set-sec">
+        <div class="set-t">💳 同步支付记录（后端服务）</div>
+        <div class="set-hint">填入后端服务地址后，记账确认页点「立即支付」即可发起支付；支付成功会自动记一笔支出并云同步。公网部署时建议后端设置 API_KEY，并在此处填入相同密钥；沙箱模式无需密钥即可联调。</div>
+        <div class="field"><label>后端服务地址（带支付的服务器）</label><input id="c-payapi" value="${esc(c.payApi||'')}" placeholder="https://your-server.example.com"/></div>
+        <div class="field"><label>后端密钥（API Key，留空则不做校验）</label><input id="c-paykey" type="password" autocomplete="off" value="${esc(c.payKey||'')}" placeholder="与后端 API_KEY 一致"/></div>
+        <div class="row2"><button class="btn sm" onclick="savePayApi()">保存</button><button class="btn sm ghost" onclick="clearPayApi()">清空</button></div>
+        <div id="pay-hint" class="set-hint"></div>
+      </div>`;
 }
 
 /* ---------------- 交互 ---------------- */
@@ -2341,7 +2358,7 @@ function confirmMoneyRec(){
   save(); render();
 }
 
-/* ============ 真实支付（后端） ============ */
+/* ============ 同步支付记录（后端） ============ */
 function getUid(){ const n=getUserName(); if(n) return n; const c=getCfg(); return (c&&c.name||'').trim(); }
 function writeRecord(rec){ state.money.records.unshift(rec); state.money.saved += rec.type==="in"?rec.amount:-rec.amount; save(); }
 function setPayHint(t){ const el=$("#pay-hint"); if(el) el.textContent=t; }
@@ -2357,17 +2374,21 @@ function payNow(){
   if(!api){ setPayHint("请先在「设置」填写后端服务地址（payApi）"); return; }
   renderPayChoose(amt,cat,mer,date,api);
 }
+let payDraft=null;
 function renderPayChoose(amt,cat,mer,date,api){
+  payDraft={amt,cat,mer,date,api}; // 暂存草稿，避免把不可信文本拼进 inline onclick（防注入）
   const box=document.createElement("div");
   box.className="pay-sheet";
   box.innerHTML=`<div class="ps-box"><h3>💳 选择支付方式</h3>
     <div style="font-size:15px;margin-bottom:14px">¥${Number(amt).toFixed(2)} · ${esc(cat)}</div>
-    <button class="btn" style="width:100%;margin-bottom:10px;background:#07c160" onclick="doCreate('wechat',${amt},'${esc(cat)}','${esc(mer)}','${esc(date)}','${esc(api)}')">微信支付</button>
-    <button class="btn" style="width:100%;margin-bottom:10px;background:#1677ff" onclick="doCreate('alipay',${amt},'${esc(cat)}','${esc(mer)}','${esc(date)}','${esc(api)}')">支付宝</button>
+    <button class="btn" style="width:100%;margin-bottom:10px;background:#07c160" onclick="doCreate('wechat')">微信支付</button>
+    <button class="btn" style="width:100%;margin-bottom:10px;background:#1677ff" onclick="doCreate('alipay')">支付宝</button>
     <button class="mini" style="width:100%" onclick="this.closest('.pay-sheet').remove()">取消</button></div>`;
   document.body.appendChild(box);
 }
-function doCreate(channel,amt,cat,mer,date,api){
+function doCreate(channel){
+  const d=payDraft; if(!d){ return; }
+  const {amt,cat,mer,date,api}=d;
   const note=mer;
   const key=(getCfg()&&getCfg().payKey||"").trim();
   const headers={"Content-Type":"application/json"};
@@ -2388,8 +2409,10 @@ function doCreate(channel,amt,cat,mer,date,api){
     .catch(err=>setPayHint("创建订单失败："+(err.message||err)));
 }
 function pollPendingPay(){
+  if(window.__wbPayPolling) return; // 防止重复加载导致多个轮询叠加
   let p; try{ p=JSON.parse(localStorage.getItem("wb_pending_pay")||"null"); }catch(e){ return; }
   if(!p) return;
+  window.__wbPayPolling=true;
   setPayHint("⏳ 支付确认中…（完成支付后回到本页会自动记账）");
   const iv=setInterval(async()=>{
     try{
@@ -2397,7 +2420,7 @@ function pollPendingPay(){
       const q=`${p.payApi}/api/pay/query?out_trade_no=${encodeURIComponent(p.outTradeNo)}`+(key?("&key="+encodeURIComponent(key)):"");
       const r=await fetch(q).then(x=>x.json());
       if(r.ok&&r.status==="paid"){
-        clearInterval(iv);
+        clearInterval(iv); window.__wbPayPolling=false;
         writeRecord(p.record);
         localStorage.removeItem("wb_pending_pay");
         setPayHint("✅ 支付成功，已记账并云同步");
@@ -2407,7 +2430,7 @@ function pollPendingPay(){
       }
     }catch(e){}
   },2000);
-  setTimeout(()=>clearInterval(iv),180000);
+  setTimeout(()=>{ clearInterval(iv); window.__wbPayPolling=false; },180000);
 }
 function savePayApi(){ const v=$("#c-payapi").value.trim(); const k=$("#c-paykey").value.trim(); const c=getCfg()||{}; c.payApi=v; c.payKey=k; localStorage.setItem(CFG_KEY, JSON.stringify(c)); setPayHint(v?"已保存后端地址与密钥":"已清空后端地址"); }
 function clearPayApi(){ const c=getCfg()||{}; delete c.payApi; delete c.payKey; localStorage.setItem(CFG_KEY, JSON.stringify(c)); setPayHint("已清空后端地址"); }
@@ -2561,23 +2584,6 @@ function renderModal(){
         <div class="tip">免费建项目：<a href="https://supabase.com" target="_blank">supabase.com</a> → 复制 Project URL 与 Anon Key（Project Settings → API），并在 SQL Editor 执行 supabase-schema.sql。</div>
       </div>`;
   }
-  // 真实支付后端设置（始终可见）
-  h+=`<div class="set-block"><h3>💳 真实支付（后端服务）</h3>
-    <div class="field"><label>后端服务地址（带支付的服务器）</label><input id="c-payapi" value="${esc((getCfg()&&getCfg().payApi||'')||'')}" placeholder="https://your-server.example.com"/></div>
-    <div class="field"><label>后端密钥（API Key，可选）</label><input id="c-paykey" value="${esc((getCfg()&&getCfg().payKey||'')||'')}" placeholder="与后端 API_KEY 一致；留空则不做校验"/></div>
-    <div class="row2"><button class="btn sm" onclick="savePayApi()">保存</button><button class="btn sm ghost" onclick="clearPayApi()">清空</button></div>
-    <div class="tip">填入后端地址后「立即支付」即可发起真实支付（需后端配置了商户密钥）。公网部署时建议设置后端 API_KEY，并在此处填入相同密钥，接口才会被放行。部署方式见仓库 README。</div>
-  </div>`;
-  // 主题配色选择器（所有模式都可见）
-  h+=`<div class="theme-block"><div class="theme-label">🎨 主题配色</div>
-    <div class="theme-row">${THEMES.map(t=>`<button class="theme-dot${curTheme.key===t.key?' on':''}" title="${t.name}" style="background:${t.v.green}" onclick="pickTheme('${t.key}')"></button>`).join("")}
-    <button class="theme-dot theme-custom${curTheme.key==='custom'?' on':''}" title="自定义颜色" onclick="openCustomTheme()">+</button></div>
-    <div id="customTheme" style="display:${curTheme.key==='custom'?'flex':'none'};margin-top:12px;align-items:center;gap:12px">
-      <input type="color" id="themeColor" value="${curTheme.key==='custom'?curTheme.v.green:'#8FBF6F'}" oninput="previewCustomTheme()" style="width:46px;height:40px;border:none;background:none;cursor:pointer;padding:0"/>
-      <button class="btn sm" onclick="applyCustomTheme()">应用自定义色</button>
-      <span style="font-size:12px;color:var(--muted)">选色后自动生成配色</span>
-    </div>
-  </div>`;
   h+=`</div>`; m.innerHTML=h;
 }
 

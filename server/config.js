@@ -35,6 +35,11 @@ const cfg = {
 
   allowedOrigins: str(process.env.ALLOWED_ORIGINS, '')
     .split(',').map(s => s.trim()).filter(Boolean),
+
+  // 接口鉴权：设置后，/api/pay/create|query|simulator 必须携带正确 API Key（请求头 x-api-key 或 ?key=）
+  apiKey: str(process.env.API_KEY, ''),
+  // 沙箱模拟收银台开关：false 时关闭模拟支付（同时沙箱回调不再跳过验签，仅真实签名回调可标记已支付）
+  simulatorEnabled: bool(process.env.SIMULATOR_ENABLED, true),
 };
 
 module.exports = cfg;

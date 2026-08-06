@@ -1,4 +1,4 @@
-// workbench-pwa 服务端入口（真实支付后端）
+// workbench-pwa 服务端入口（同步支付记录后端）
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
@@ -18,8 +18,26 @@ app.use(cors({
 
 app.use(express.static(path.join(__dirname, '..', 'www')));
 
+// ---------- 安全中间件 ----------
+// HTML 属性转义（用于模拟收银台页面反射 out_trade_no 等）
+function escAttr(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+// API Key 鉴权：未设置 API_KEY 则不校验（本地/开发便捷）；设置后关键接口必须带正确 Key
+function requireApiKey(req, res, next) {
+  if (!cfg.apiKey) return next();
+  const k = req.get('x-api-key') || (req.query && req.query.key) || '';
+  if (k && k === cfg.apiKey) return next();
+  return res.status(401).json({ ok: false, msg: '未授权：缺少或错误的 API Key' });
+}
+// 沙箱模拟开关：关闭时拒绝模拟支付相关接口
+function requireSimulator(req, res, next) {
+  if (!cfg.simulatorEnabled) return res.status(403).json({ ok: false, msg: '沙箱模拟支付已关闭（SIMULATOR_ENABLED=false）' });
+  return next();
+}
+
 // 创建支付订单：{ channel:'wechat'|'alipay', amount, description?, category?, note?, userId? }
-app.post('/api/pay/create', async (req, res) => {
+app.post('/api/pay/create', requireApiKey, async (req, res) => {
   try {
     const { channel, amount, description, category, note, userId } = req.body || {};
     const r = await orders.createOrder({ channel, amount, description, category, note, userId });
@@ -30,7 +48,7 @@ app.post('/api/pay/create', async (req, res) => {
 });
 
 // 查询订单状态
-app.get('/api/pay/query', async (req, res) => {
+app.get('/api/pay/query', requireApiKey, async (req, res) => {
   const { out_trade_no } = req.query;
   if (!out_trade_no) return res.status(400).json({ ok: false, msg: '缺少 out_trade_no' });
   const s = await orders.getStatus(out_trade_no);
@@ -55,12 +73,13 @@ app.post('/api/pay/notify/alipay',
   });
 
 // 沙箱模拟收银台页面（无密钥联调用）
-app.get('/api/pay/simulator/:outTradeNo', async (req, res) => {
+app.get('/api/pay/simulator/:outTradeNo', requireApiKey, requireSimulator, async (req, res) => {
   const s = await orders.getStatus(req.params.outTradeNo);
   if (!s.found) return res.status(404).send('订单不存在');
   const amt = s.amount != null ? Number(s.amount).toFixed(2) : '0.00';
   const ch = s.channel === 'alipay' ? '支付宝' : '微信支付';
   const paid = s.status === 'paid';
+  const ot = escAttr(req.params.outTradeNo);
   res.type('html').send(`<!doctype html><html lang="zh"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>模拟收银台</title>
 <style>body{font-family:system-ui,sans-serif;background:#f5f6f8;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
@@ -73,12 +92,12 @@ button[disabled]{background:#ccc;cursor:not-allowed}
 <body><div class="box">
 <h3>模拟${ch}收银台</h3>
 <div class="amt">¥${amt}</div>
-<div class="ch">订单 ${req.params.outTradeNo}</div>
+<div class="ch">订单 ${ot}</div>
 <button id="payBtn" ${paid ? 'disabled' : ''} onclick="doPay()">${paid ? '已支付 ✓' : '确认支付（模拟）'}</button>
 <div class="note">这是沙箱模式的本地模拟页面，不会真实扣款。<br>配置真实商户密钥后即变为正式收银台。</div>
 </div>
 <script>
-function doPay(){fetch('/api/pay/simulator/${req.params.outTradeNo}',{method:'POST'}).then(r=>r.json()).then(d=>{
+function doPay(){const k=new URLSearchParams(location.search).get('key');fetch('/api/pay/simulator/${ot}'+(k?('?key='+encodeURIComponent(k)):''),{method:'POST'}).then(r=>r.json()).then(d=>{
   if(d.ok){document.getElementById('payBtn').textContent='已支付 ✓';document.getElementById('payBtn').disabled=true;
     setTimeout(()=>{window.location.href='/';},800);}
 });}
@@ -86,7 +105,7 @@ function doPay(){fetch('/api/pay/simulator/${req.params.outTradeNo}',{method:'PO
 });
 
 // 沙箱模拟：标记订单已支付（供模拟页面调用）
-app.post('/api/pay/simulator/:outTradeNo', async (req, res) => {
+app.post('/api/pay/simulator/:outTradeNo', requireApiKey, requireSimulator, async (req, res) => {
   try {
     await orders.markPaid(req.params.outTradeNo, 'SANDBOX_' + Date.now());
     res.json({ ok: true });

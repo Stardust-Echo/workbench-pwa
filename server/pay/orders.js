@@ -17,6 +17,7 @@ async function createOrder({ channel, amount, description, category, note, userI
   channel = channel === 'alipay' ? 'alipay' : 'wechat';
   const amt = Math.round(Number(amount) * 100) / 100;
   if (!amt || amt <= 0) throw new Error('金额无效');
+  if (amt > 1e8) throw new Error('金额超出上限');
 
   const outTradeNo = genOutTradeNo(channel === 'alipay' ? 'AL' : 'WX');
   const notifyUrl = `${cfg.publicBaseUrl}/api/pay/notify/${channel}`;
