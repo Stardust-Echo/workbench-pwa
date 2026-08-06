@@ -578,6 +578,38 @@
   .pay-sheet{position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:flex-end; z-index:62}
   .pay-sheet .ps-box{background:var(--card); width:100%; max-width:480px; margin:0 auto; border-radius:22px 22px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom)); max-height:86vh; overflow:auto}
   .pay-sheet .ps-box h3{margin:0 0 12px; font-size:17px}
+
+  /* ---------- 我的日志（日期选择 / 一天回看） ---------- */
+  .lg-wrap{display:flex; flex-direction:column; gap:14px}
+  .lg-cal{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px 12px}
+  .lg-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
+  .lg-month{font-size:16px; font-weight:700; color:var(--ink)}
+  .lg-nav{width:34px; height:34px; border-radius:50%; border:1px solid var(--line); background:var(--card); color:var(--ink); font-size:20px; line-height:1; cursor:pointer}
+  .lg-nav:active{transform:scale(.94)}
+  .lg-week{display:grid; grid-template-columns:repeat(7,1fr); text-align:center; color:var(--muted); font-size:12px; margin-bottom:4px}
+  .lg-week span{padding:4px 0}
+  .lg-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px}
+  .lg-cell{position:relative; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; border-radius:10px; font-size:14px; color:var(--ink); cursor:pointer; user-select:none}
+  .lg-cell.empty{cursor:default}
+  .lg-cell:not(.empty):active{background:var(--bg,#f4f1ea)}
+  .lg-cell.today{font-weight:700; box-shadow:inset 0 0 0 1.5px var(--green,#8FBF6F)}
+  .lg-cell.on{background:var(--green,#8FBF6F); color:#fff}
+  .lg-cell.on .lg-dot{background:#fff}
+  .lg-dot{position:absolute; bottom:5px; left:50%; transform:translateX(-50%); width:5px; height:5px; border-radius:50%; background:var(--green-d,#6f9e4e)}
+  .lg-foot{display:flex; align-items:center; justify-content:space-between; margin-top:12px}
+  .lg-today{border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:20px; padding:6px 14px; font-size:13px; cursor:pointer}
+  .lg-stat{font-size:12px; color:var(--muted)}
+  .lg-sec{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px 12px}
+  .lg-sec-title{display:flex; align-items:center; gap:8px; font-size:15px; font-weight:700; color:var(--ink); margin-bottom:10px}
+  .lg-sec-ic{width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px}
+  .lg-list{display:flex; flex-direction:column; gap:8px}
+  .lg-row{display:flex; align-items:center; gap:10px; padding:9px 10px; border:1px solid var(--line); border-radius:12px; background:var(--bg,#f4f1ea)}
+  .lg-em{width:30px; height:30px; border-radius:9px; background:rgba(143,191,111,.16); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0}
+  .lg-txt{flex:1; min-width:0}
+  .lg-lbl{font-size:12px; color:var(--muted)}
+  .lg-cn{font-size:14px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .lg-t{font-size:12px; color:var(--muted); flex-shrink:0}
+  .lg-empty{padding:24px 10px; text-align:center; color:var(--muted); font-size:14px}
 </style>
 </head>
 <body>
@@ -633,6 +665,7 @@ const MODULES = [
   {id:"notes",   name:"便签",     ic:"🗒️", color:"#9FC2E8"},
   {id:"whisper", name:"树洞",     ic:"🌳", color:"#A8C686"},
   {id:"settings",name:"设置",     ic:"⚙️", color:"#B6AEA3"},
+  {id:"log",     name:"我的日志", ic:"📅", color:"#9FC2E8"},
 ];
 
 /* 模块分类（用于「更多」按类别分组，解决高低频混放 / 层级不清） */
@@ -640,6 +673,7 @@ const CATS = [
   {key:"core", name:"核心日常", ids:["tasks","habit","mood","money"]},
   {key:"note", name:"记录沉淀", ids:["idea","notes","whisper","read"]},
   {key:"grow", name:"规划成长", ids:["fit","study","project"]},
+  {key:"review",name:"时间回看", ids:["log"]},
   {key:"sys",  name:"系统设置", ids:["settings"]},
 ];
 function catOf(id){ const c=CATS.find(c=>c.ids.includes(id)); return c?c.key:""; }
@@ -2646,6 +2680,101 @@ async function pullCloud(manual){
   if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
   // 每 60 秒检测跨天：次日自动清掉旧习惯/运动任务、刷新今日清单
   setInterval(()=>{ const t=dayKey(); if(state.habitTaskDate!==t){ syncHabitTasks(); syncFitTasks(); if(current==="tasks"||current==="home") render(); } }, 60000);
+
+  /* ================= 我的日志（日期选择 / 一天回看） ================= */
+  let calSel = dayKey();
+  let calYM = (()=>{ const d=new Date(); return {y:d.getFullYear(), m:d.getMonth()}; })();
+
+  // 取一条记录归属到“哪一天”；无时间信息返回 ""
+  function itemDayKey(x){
+    if(!x) return "";
+    if(typeof x.ts==="number" && x.ts>0) return dayKeyStr(new Date(x.ts));
+    const d = x.date;
+    if(typeof d==="string"){
+      if(/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;                          // YYYY-MM-DD
+      if(/^\d{2}-\d{2}$/.test(d)) return new Date().getFullYear()+"-"+d;  // MM-DD（记账未存年份）
+    }
+    if(typeof d==="number" && d>0) return dayKeyStr(new Date(d));
+    return "";
+  }
+  // 汇总某一天你在各模块“干了什么”
+  function collectDay(dk){
+    const out=[];
+    const push=(em,lbl,cn,ts)=>out.push({em,lbl,cn:String(cn||""),ts:ts||0});
+    (state.mood||[]).forEach(x=>{ if(itemDayKey(x)===dk) push(x.emoji||"🌈","心情",(x.label||"")+(x.note?(" · "+x.note):""),x.ts||0); });
+    (state.notes||[]).forEach(x=>{ if(itemDayKey(x)===dk) push(x.ic||"🗒️","便签",x.text,x.ts||0); });
+    (state.whisper||[]).forEach(x=>{ const it=typeof x==="string"?{text:x,ts:Date.now()}:x; if(itemDayKey(it)===dk) push("🌿","树洞",it.text,it.ts||0); });
+    (state.read||[]).forEach(x=>{ if(itemDayKey(x)===dk) push("🎵","音乐",(x.title||"")+(x.singer?(" - "+x.singer):""),x.ts||0); });
+    (state.money&&state.money.records||[]).forEach(x=>{ if(itemDayKey(x)===dk) push(x.type==="in"?"💚":"💸","记账",(x.cat||"")+" "+(x.type==="in"?"+":"-")+(x.amount||0)+"元"+(x.note?(" · "+x.note):""),0); });
+    (state.fit||[]).forEach(x=>{ if(itemDayKey(x)===dk) push("💪","运动",(x.type||"")+(x.note?(" · "+x.note):"")+(x.kcal?(" · "+x.kcal+"kcal"):""),0); });
+    (state.tasks||[]).forEach(x=>{ if(x.day&&x.day===dk) push("📝","任务",x.text+(x.done?" ✓":""),0); });
+    (state.countdowns||[]).forEach(x=>{ if(x.date===dk) push(x.emoji||"📌","倒数日",x.title,0); });
+    out.sort((a,b)=>(a.ts||1e15)-(b.ts||1e15));   // 有时间戳的按先后排，无时间戳的（记账/运动/任务/倒数）置后
+    return out;
+  }
+  // 哪些天有记录（用于日历打点）
+  function daysWithActivity(){
+    const set=new Set();
+    const add=x=>{ const k=itemDayKey(x); if(k) set.add(k); };
+    (state.mood||[]).forEach(add); (state.notes||[]).forEach(add); (state.whisper||[]).forEach(add);
+    (state.read||[]).forEach(add); (state.money&&state.money.records||[]).forEach(add); (state.fit||[]).forEach(add);
+    (state.tasks||[]).forEach(t=>{ if(t.day) set.add(t.day); });
+    return set;
+  }
+  function selLogDay(dk){ calSel=dk; render(); }
+  function logStepMonth(d){ calYM.m+=d; if(calYM.m<0){calYM.m=11;calYM.y--;} else if(calYM.m>11){calYM.m=0;calYM.y++;} render(); }
+  function logGoToday(){ const d=new Date(); calYM={y:d.getFullYear(),m:d.getMonth()}; calSel=dayKey(); render(); }
+
+  VIEWS.log = function(){
+    const y=calYM.y, m=calYM.m;
+    const startDow=new Date(y,m,1).getDay();
+    const daysInMonth=new Date(y,m+1,0).getDate();
+    const act=daysWithActivity();
+    const sel=calSel||dayKey();
+    const wk=["日","一","二","三","四","五","六"];
+    const cells=[];
+    for(let i=0;i<startDow;i++) cells.push(null);
+    for(let d=1;d<=daysInMonth;d++) cells.push(d);
+    while(cells.length%7!==0) cells.push(null);
+    const todayK=dayKey();
+    const P=n=>String(n).padStart(2,"0");
+    const grid=cells.map(c=>{
+      if(c===null) return `<div class="lg-cell empty"></div>`;
+      const dk=`${y}-${P(m+1)}-${P(c)}`;
+      const cls=`lg-cell${dk===sel?" on":""}${dk===todayK?" today":""}`;
+      return `<div class="${cls}" onclick="selLogDay('${dk}')"><span class="lg-d">${c}</span>${act.has(dk)?'<i class="lg-dot"></i>':""}</div>`;
+    }).join("");
+    const items=collectDay(sel);
+    const sd=new Date(sel+"T00:00:00");
+    const selLabel=`${sd.getFullYear()}年${sd.getMonth()+1}月${sd.getDate()}日 · ${W[sd.getDay()]}`;
+    const logHtml=items.length?items.map(r=>`
+      <div class="lg-row">
+        <div class="lg-em">${r.em}</div>
+        <div class="lg-txt"><div class="lg-lbl">${esc(r.lbl)}</div><div class="lg-cn">${esc(r.cn)}</div></div>
+        <div class="lg-t">${r.ts?fmtTime(r.ts):""}</div>
+      </div>`).join("")
+      :`<div class="lg-empty">这天还没有记录～ 去各模块记点什么，再回来翻看吧 🌿</div>`;
+    return `
+    <div class="lg-wrap">
+      <div class="lg-cal">
+        <div class="lg-head">
+          <button class="lg-nav" onclick="logStepMonth(-1)">‹</button>
+          <div class="lg-month">${y}年${m+1}月</div>
+          <button class="lg-nav" onclick="logStepMonth(1)">›</button>
+        </div>
+        <div class="lg-week">${wk.map(w=>`<span>${w}</span>`).join("")}</div>
+        <div class="lg-grid">${grid}</div>
+        <div class="lg-foot">
+          <button class="lg-today" onclick="logGoToday()">回到今天</button>
+          <span class="lg-stat">${items.length?("这天共 "+items.length+" 条记录"):"这天暂无记录"}</span>
+        </div>
+      </div>
+      <div class="lg-sec">
+        <div class="lg-sec-title"><span class="lg-sec-ic" style="background:#9FC2E8">📅</span>${esc(selLabel)}</div>
+        <div class="lg-list">${logHtml}</div>
+      </div>
+    </div>`;
+  };
 })();
 </script>
 </body>
