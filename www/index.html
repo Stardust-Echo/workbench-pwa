@@ -503,6 +503,12 @@
   .song-card .sc-play:active{filter:brightness(.93)}
   .cover-ph{display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; background:linear-gradient(135deg, hsl(var(--h),62%,60%), hsl(calc(var(--h) + 38),64%,50%)); text-shadow:0 1px 2px rgba(0,0,0,.18)}
   .song-feat .sf-cover.cover-ph{font-size:26px}
+  .song-feat .sf-refresh{font-size:12px}
+  .song-feat .sf-recs{display:flex; flex-direction:column; gap:10px; position:relative; z-index:1; margin-top:2px}
+  .song-feat .sf-rec{display:flex; gap:12px; align-items:center}
+  .song-feat .sf-rec .sf-rec-mid{flex:1; min-width:0}
+  .song-feat .sf-rec .sc-play{flex:0 0 auto; font-size:12px; color:#fff; text-decoration:none; background:var(--btn); border-radius:20px; padding:5px 14px; font-weight:600; white-space:nowrap; box-shadow:0 3px 8px color-mix(in srgb, var(--btn) 30%, transparent)}
+  .song-feat .sf-rec .sc-play:active{filter:brightness(.93)}
   .song-card .sc-cover.cover-ph{font-size:20px}
   /* ---------- 歌词搜索 ---------- */
   .lyric-box{border:1px solid var(--line); border-radius:18px; padding:16px; background:var(--card); margin-bottom:16px}
@@ -694,7 +700,7 @@ const FAMOUS = [
   {t:"我学到的任何有价值的知识，都是由自学中得来的。", a:"达尔文"}
 ];
 let famousIdx = 0;
-let songIdx = 0;
+let songRecs = [];
 let songFilter = "全部";
 let songTab = "hot";
 let lyricQ="", lyricHits=[], lyricOpen=-1, lyricOpenHit=null, lyricLRC="", lyricState="none", lyricLoad="none", lyricErr="";
@@ -1014,7 +1020,7 @@ const KEY = "qingchen-workbench-v1";
 const CFG_KEY = "qingchen-wb-cfg";
 let sb = null, user = null;
 
-function load(){ try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null} }
+function load(){ try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s && s._v===2) return s; return null; }catch(e){return null} }
 function getCfg(){ try{return JSON.parse(localStorage.getItem(CFG_KEY))}catch(e){return null} }
 const USER_KEY = "qingchen-wb-user";
 function getUserName(){ return (localStorage.getItem(USER_KEY)||"").trim(); }
@@ -1032,28 +1038,26 @@ function saveUserName(){
 function save_local(){ localStorage.setItem(KEY, JSON.stringify(state)) }
 
 let state = load() || defaultState();
+/* _v: 版本号；旧数据无 _v 视为种子数据，自动迁移为空初始态 */
 function defaultState(){ return {
-  tasks:[{id:1,text:"整理本周工作台模块",done:false},{id:2,text:"读完《纳瓦尔宝典》第3章",done:true},{id:3,text:"给基金账户做一次再平衡",done:false}],
-  habit:[{id:1,name:"早起 7:00",week:[1,1,0,1,1,0,0]},{id:2,name:"喝水 2L",week:[1,1,1,0,1,0,1]},{id:3,name:"阅读 30 分钟",week:[1,0,1,1,0,1,0]}],
+  _v: 2,
+  tasks:[],
+  habit:[],
   habitTaskDate:null,
   tabOrder:["home","tasks","habit","mood","money"],
-  countdowns:[
-    {id:1, title:"我的生日", date:"2026-10-09", emoji:"🎂"},
-    {id:2, title:"国庆假期", date:"2026-10-01", emoji:"🏖️"},
-    {id:3, title:"季度复盘", date:"2026-09-30", emoji:"📝"}
-  ],
+  countdowns:[],
   mood:[],
-  read:[{title:"也想",singer:"告五人",style:"治愈",reason:"深夜一个人听刚刚好，旋律很轻，像在轻轻拍肩膀。",ts:Date.now()},{title:"起风了",singer:"买辣椒也用券",style:"怀旧",reason:"青春回忆杀，每次听都起鸡皮疙瘩。",ts:Date.now()-86400000}],
-  fit:[{date:"08-02",type:"力量",note:"胸 + 三头，45min",kcal:320},{date:"08-01",type:"有氧",note:"跑步 5km",kcal:410}],
+  read:[],
+  fit:[],
   foodLog:[],
   vision:{key:"", base:"https://openrouter.ai/api/v1", model:"nvidia/nemotron-nano-12b-v2-vl:free"},
-  study:[{title:"TypeScript 进阶",progress:40},{title:"系统设计入门",progress:15}],
-  project:[{name:"工作台 PWA",status:"进行中",note:"manifest + service worker"},{name:"需求文档 v2",status:"待启动",note:"本周内产出"}],
-  idea:["用 PWA 把工作台装进手机主屏","记账模块加基金净值曲线","便签支持语音速记"],
-  money:{goal:50000,saved:0,records:[]},
-  funds:[{name:"沪深300ETF",code:"510300",value:6800,change:1.2},{name:"中证白酒",code:"161725",value:3520,change:-0.4},{name:"黄金ETF",code:"518880",value:2520,change:0.7}],
-  notes:[{id:1,color:"#FFF2B8",text:"下周和设计师对齐工作台配色方案",ts:Date.now()-86400000*2},{id:2,color:"#D6E8C8",text:"记账模块要能手动添加基金净值",ts:Date.now()-86400000},{id:3,color:"#FBD3D3",text:"记得给妈妈订生日蛋糕 🎂",ts:Date.now()-3600000*5}],
-  whisper:[{text:"今天终于把工作台做成能装进手机的样子了，开心。",ts:Date.now()-86400000*3},{text:"最近基金有点绿，但长期拿着不慌。",ts:Date.now()-86400000*5}]
+  study:[],
+  project:[],
+  idea:[],
+  money:{goal:0,saved:0,records:[]},
+  funds:[],
+  notes:[],
+  whisper:[]
 };}
 
 /* ---- 统一保存入口：本地 + 云端 ---- */
@@ -1521,8 +1525,6 @@ const VIEWS = {
     const isMine = songTab==="mine";
     const pool = isMine ? mine : hot;
     const filt = (isMine && songFilter && songFilter!=="全部") ? mine.filter(s=>s.style===songFilter) : pool;
-    const allPool = hot.concat(mine);
-    const feat = allPool.length ? allPool[songIdx % allPool.length] : null;
     const styles = [...new Set(pool.map(s=>s.style).filter(Boolean))];
     return `
     <div class="card">
@@ -1530,16 +1532,19 @@ const VIEWS = {
 
       <div class="song-feat">
         <div class="sf-note">♪</div>
-        <div class="sf-h"><span>🎧 今日推荐</span>${feat?'<span onclick="shuffleSong()">🎲 换一首</span>':''}</div>
-        ${feat?`
-          <div class="sf-card">
-            ${songCover(feat,"sf-cover")}
-            <div style="min-width:0">
-              <div class="sf-title">${esc(feat.title)} · ${esc(feat.singer||"")}</div>
-              ${feat.lyric?`<div class="sf-reason">${esc(feat.lyric)}</div>`:''}
-            </div>
+        <div class="sf-h"><span>🎧 今日推荐</span><span class="sf-refresh" onclick="refreshRecs()">🔄 换一批</span></div>
+        ${songRecs.length?`
+          <div class="sf-recs">
+            ${songRecs.map(s=>`
+              <div class="sf-rec">
+                ${songCover(s,"sf-cover")}
+                <div class="sf-rec-mid">
+                  <div class="sf-title">${esc(s.title)} · ${esc(s.singer||"")}</div>
+                  ${s.lyric?`<div class="sf-reason">${esc(s.lyric)}</div>`:''}
+                </div>
+                <a class="sc-play" href="${esc(songPlayUrl(s))}" target="_blank" rel="noopener">▶ 试听</a>
+              </div>`).join("")}
           </div>
-          <a class="btn ghost" href="${esc(songPlayUrl(feat))}" target="_blank" rel="noopener">▶ 试听 / 跳转</a>
         `:'<div class="empty" style="padding:4px 0">没有可推荐的音乐</div>'}
       </div>
 
@@ -2022,9 +2027,42 @@ const VIEWS = {
         <div class="pin-chips">${pinned.map(m=>`<span class="pin-chip"><span class="pin-dot" style="background:${m.color}"></span>${m.name}</span>`).join("")}</div>
         <button class="btn" style="margin-top:12px" onclick="openEdit()">✏️ 自定义主要功能区</button>
       </div>
+
+      <div class="set-sec">
+        <div class="set-t">☁️ 同步与备份</div>
+        ${syncBlockHtml()}
+      </div>
     </div>`;
   },
 };
+
+/* 设置板块里的「☁️ 同步与备份」区块（原先右上角的入口移到这里） */
+function syncBlockHtml(){
+  const cfg=getCfg();
+  if(user){
+    return `
+      <div class="set-hint" style="color:var(--green-d);margin-bottom:10px">✓ 已连接云端，账号：<b>${esc(user.email)}</b></div>
+      <div class="row2">
+        <button class="btn ghost sm" onclick="pullCloud(true)">立即同步</button>
+        <button class="btn ghost sm" onclick="logout()">退出登录</button>
+        <button class="btn ghost sm" onclick="editCfg()">清除本地模式配置</button>
+      </div>
+      <div class="set-hint">数据实时存到云端，换设备登录同一账号即可恢复。别人通过分享链接也能装这个 App，各自数据独立。</div>`;
+  }
+  if(cfg && cfg.url){
+    return `
+      <div class="set-hint" style="margin-bottom:10px">已配置 Supabase 项目，但还未登录。</div>
+      <div class="row2">
+        <button class="btn sm" onclick="toggleModal()">登录云端</button>
+        <button class="btn ghost sm" onclick="editCfg()">清除配置</button>
+      </div>`;
+  }
+  return `
+    <div class="set-hint" style="margin-bottom:10px">当前为<strong>本地模式</strong>：数据只存在这台设备，无需登录。想要多设备同步时再开启云同步。</div>
+    <div class="row2">
+      <button class="btn sm" onclick="toggleModal()">开启云同步</button>
+    </div>`;
+}
 
 /* ---------------- 交互 ---------------- */
 let _uidc=0;
@@ -2089,7 +2127,15 @@ function addSong(){
   const u=$("#s-url"); if(u) u.value="";
 }
 function delSong(idx){ if(idx>=0 && idx<state.read.length) state.read.splice(idx,1); save(); render(); }
-function shuffleSong(){ const n=(HOT_SONGS.length + (state.read||[]).length); if(n) songIdx=Math.floor(Math.random()*n); render(); }
+/* 从「热门 + 我的收藏」里随机挑一组作为今日推荐，可一键换一批 */
+function pickSongRecs(n){
+  const pool = HOT_SONGS.concat(state.read||[]);
+  if(!pool.length) return [];
+  const arr = pool.slice();
+  for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr.slice(0, Math.min(n||4, arr.length));
+}
+function refreshRecs(){ songRecs = pickSongRecs(4); render(); }
 function setSongFilter(s){ songFilter=s; render(); }
 function setSongTab(t){ songTab=t; render(); }
 function collectHot(idx){ const h=HOT_SONGS[idx]; if(!h) return; if((state.read||[]).some(x=>x.title===h.title && x.singer===h.singer)) return; state.read.push({title:h.title,singer:h.singer,style:h.style,lyric:h.lyric,url:h.url,ts:Date.now()}); save(); render(); }
@@ -2361,9 +2407,9 @@ function toggleModal(){ $("#accountModal").classList.toggle("on"); renderModal()
 
 function renderAccount(){
   const btn=$("#accountBtn"); const cfg=getCfg();
-  if(user) btn.innerHTML=`<button class="account-btn" onclick="toggleModal()"><span class="avatar">${esc((user.email||'?')[0].toUpperCase())}</span><span class="sync-dot"></span>已同步</button>`;
-  else if(cfg&&cfg.url) btn.innerHTML=`<button class="account-btn" onclick="toggleModal()"><span class="sync-dot off"></span>未登录</button>`;
-  else btn.innerHTML=`<button class="account-btn" onclick="toggleModal()">📱 本地模式</button>`;
+  /* 右上角仅在「已登录」时显示入口；本地/未登录状态完全移到设置板块里，避免污染其他板块 */
+  if(user) btn.innerHTML=`<button class="account-btn" onclick="toggleModal()" title="账号设置"><span class="avatar">${esc((user.email||'?')[0].toUpperCase())}</span><span class="sync-dot"></span>已同步</button>`;
+  else btn.innerHTML="";
   renderModal();
 }
 
@@ -2464,7 +2510,7 @@ async function pullCloud(manual){
   const savedCard = loadCard(); if(savedCard) document.documentElement.style.setProperty("--card", savedCard);
   const savedBtn = loadBtn(); if(savedBtn){ document.documentElement.style.setProperty("--btn", savedBtn); document.documentElement.style.setProperty("--btn-d", darken(savedBtn,.12)); }
   const savedFont = loadFont(); if(savedFont){ const f=FONTS.find(x=>x.key===savedFont); if(f) applyFont(f.stack); }
-  buildNav(); syncHabitTasks(); syncFitTasks(); render(); renderAccount(); initSb();
+  buildNav(); syncHabitTasks(); syncFitTasks(); songRecs = pickSongRecs(4); render(); renderAccount(); initSb();
   if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
   // 每 60 秒检测跨天：次日自动清掉旧习惯/运动任务、刷新今日清单
   setInterval(()=>{ const t=dayKey(); if(state.habitTaskDate!==t){ syncHabitTasks(); syncFitTasks(); if(current==="tasks"||current==="home") render(); } }, 60000);
