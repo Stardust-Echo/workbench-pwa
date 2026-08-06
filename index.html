@@ -702,7 +702,6 @@ const FAMOUS = [
 let famousIdx = 0;
 let songRecs = [];
 let songFilter = "全部";
-let songTab = "hot";
 let lyricQ="", lyricHits=[], lyricOpen=-1, lyricOpenHit=null, lyricLRC="", lyricState="none", lyricLoad="none", lyricErr="";
 function famousQuote(){ return FAMOUS[famousIdx % FAMOUS.length]; }
 function shuffleFamous(){ famousIdx = Math.floor(Math.random()*FAMOUS.length); render(); }
@@ -1521,11 +1520,8 @@ const VIEWS = {
 
   read:()=>{
     const mine = state.read||[];
-    const hot = HOT_SONGS;
-    const isMine = songTab==="mine";
-    const pool = isMine ? mine : hot;
-    const filt = (isMine && songFilter && songFilter!=="全部") ? mine.filter(s=>s.style===songFilter) : pool;
-    const styles = [...new Set(pool.map(s=>s.style).filter(Boolean))];
+    const styles = [...new Set(mine.map(s=>s.style).filter(Boolean))];
+    const filt = (songFilter && songFilter!=="全部") ? mine.filter(s=>s.style===songFilter) : mine;
     return `
     <div class="card">
       <h2>🎵 音乐推荐 <span class="tag">热门好歌 + 歌词</span></h2>
@@ -1582,73 +1578,45 @@ const VIEWS = {
         `}
       </div>
 
-      <div class="song-tabs">
-        <span class="song-tab ${!isMine?'on':''}" onclick="setSongTab('hot')">🔥 热门推荐</span>
-        <span class="song-tab ${isMine?'on':''}" onclick="setSongTab('mine')">⭐ 我的收藏 (${mine.length})</span>
+      <div class="add">
+        <input id="s-title" placeholder="歌名 / 曲名" />
+        <input id="s-singer" placeholder="歌手（选填）" />
+      </div>
+      <div class="add" style="margin-top:8px">
+        <input id="s-style" list="songStyles" placeholder="风格标签，如：治愈/运动/睡前" style="flex:1" />
+        <datalist id="songStyles">${SONG_STYLES.map(s=>`<option value="${s}">`).join("")}</datalist>
+        <input id="s-url" placeholder="试听链接（选填）" style="flex:1.3" />
+      </div>
+      <div class="add" style="margin-top:8px">
+        <input id="s-reason" placeholder="推荐理由 / 歌词片段…" style="flex:1" />
+        <button class="btn" onclick="addSong()">添加</button>
+      </div>
+      <div class="img-bar">
+        <label class="img-btn">📷 封面<input id="s-img" type="file" accept="image/*" style="display:none" onchange="onSongImg(this)"/></label>
+        ${songImg?`<div class="img-prev"><img src="${songImg}"/><span class="x" onclick="clearSongImg()">✕</span></div>`:''}
       </div>
 
-      ${isMine?`
-        <div class="add">
-          <input id="s-title" placeholder="歌名 / 曲名" />
-          <input id="s-singer" placeholder="歌手（选填）" />
-        </div>
-        <div class="add" style="margin-top:8px">
-          <input id="s-style" list="songStyles" placeholder="风格标签，如：治愈/运动/睡前" style="flex:1" />
-          <datalist id="songStyles">${SONG_STYLES.map(s=>`<option value="${s}">`).join("")}</datalist>
-          <input id="s-url" placeholder="试听链接（选填）" style="flex:1.3" />
-        </div>
-        <div class="add" style="margin-top:8px">
-          <input id="s-reason" placeholder="推荐理由 / 歌词片段…" style="flex:1" />
-          <button class="btn" onclick="addSong()">添加</button>
-        </div>
-        <div class="img-bar">
-          <label class="img-btn">📷 封面<input id="s-img" type="file" accept="image/*" style="display:none" onchange="onSongImg(this)"/></label>
-          ${songImg?`<div class="img-prev"><img src="${songImg}"/><span class="x" onclick="clearSongImg()">✕</span></div>`:''}
-        </div>
+      <div class="song-filters">
+        <span class="song-chip ${(!songFilter||songFilter==='全部')?'on':''}" onclick="setSongFilter('全部')">全部</span>
+        ${styles.map(st=>`<span class="song-chip ${songFilter===st?'on':''}" onclick="setSongFilter('${esc(st)}')">${esc(st)}</span>`).join("")}
+      </div>
 
-        <div class="song-filters">
-          <span class="song-chip ${(!songFilter||songFilter==='全部')?'on':''}" onclick="setSongFilter('全部')">全部</span>
-          ${styles.map(st=>`<span class="song-chip ${songFilter===st?'on':''}" onclick="setSongFilter('${esc(st)}')">${esc(st)}</span>`).join("")}
-        </div>
-
-        ${filt.length?filt.slice().reverse().map(s=>{
-          const idx=mine.indexOf(s);
-          return `<div class="song-card">
-            ${songCover(s,"sc-cover")}
-            <div class="sc-main">
-              <div class="sc-title">${esc(s.title||"无题")}</div>
-              <div class="sc-singer">${esc(s.singer||"未知歌手")}</div>
-              ${s.style?`<span class="sc-style">${esc(s.style)}</span>`:''}
-              ${(s.reason||s.lyric)?`<div class="sc-reason">${esc(s.reason||s.lyric)}</div>`:''}
-            </div>
-            <div class="sc-actions">
-              <a class="sc-play" href="${esc(songPlayUrl(s))}" target="_blank" rel="noopener">▶ 试听</a>
-              <div class="del" onclick="delSong(${idx})">删除</div>
-            </div>
-          </div>`;
-        }).join(""):'<div class="empty">还没有收藏的音乐，去「热门推荐」里点 ＋收藏 吧</div>'}
-      `:`
-        <div class="song-filters">
-          <span class="song-chip ${(!songFilter||songFilter==='全部')?'on':''}" onclick="setSongFilter('全部')">全部</span>
-          ${styles.map(st=>`<span class="song-chip ${songFilter===st?'on':''}" onclick="setSongFilter('${esc(st)}')">${esc(st)}</span>`).join("")}
-        </div>
-
-        ${filt.length?filt.map((h,i)=>{
-          const idx=HOT_SONGS.indexOf(h);
-          return `<div class="song-card">
-            ${songCover(h,"sc-cover")}
-            <div class="sc-main">
-              <div class="sc-title">${esc(h.title)} · ${esc(h.singer)}</div>
-              ${h.style?`<span class="sc-style">${esc(h.style)}</span>`:''}
-              ${h.lyric?`<div class="sc-reason">${esc(h.lyric)}</div>`:''}
-            </div>
-            <div class="sc-actions">
-              <a class="sc-play" href="${esc(songPlayUrl(h))}" target="_blank" rel="noopener">▶ 试听</a>
-              <div class="del" onclick="collectHot(${idx})">＋收藏</div>
-            </div>
-          </div>`;
-        }).join(""):'<div class="empty">该风格下暂无歌曲</div>'}
-      `}
+      ${filt.length?filt.slice().reverse().map(s=>{
+        const idx=mine.indexOf(s);
+        return `<div class="song-card">
+          ${songCover(s,"sc-cover")}
+          <div class="sc-main">
+            <div class="sc-title">${esc(s.title||"无题")}</div>
+            <div class="sc-singer">${esc(s.singer||"未知歌手")}</div>
+            ${s.style?`<span class="sc-style">${esc(s.style)}</span>`:''}
+            ${(s.reason||s.lyric)?`<div class="sc-reason">${esc(s.reason||s.lyric)}</div>`:''}
+          </div>
+          <div class="sc-actions">
+            <a class="sc-play" href="${esc(songPlayUrl(s))}" target="_blank" rel="noopener">▶ 试听</a>
+            <div class="del" onclick="delSong(${idx})">删除</div>
+          </div>
+        </div>`;
+      }).join(""):'<div class="empty">还没有收藏的音乐，点上方添加一首吧～</div>'}
     </div>`;
   },
 
@@ -2137,8 +2105,6 @@ function pickSongRecs(n){
 }
 function refreshRecs(){ songRecs = pickSongRecs(4); render(); }
 function setSongFilter(s){ songFilter=s; render(); }
-function setSongTab(t){ songTab=t; render(); }
-function collectHot(idx){ const h=HOT_SONGS[idx]; if(!h) return; if((state.read||[]).some(x=>x.title===h.title && x.singer===h.singer)) return; state.read.push({title:h.title,singer:h.singer,style:h.style,lyric:h.lyric,url:h.url,ts:Date.now()}); save(); render(); }
 
 /* ---------- 歌词搜索（QQ搜索JSONP + injahow lrc） ---------- */
 function searchLyric(){
