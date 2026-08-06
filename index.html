@@ -2369,16 +2369,21 @@ function renderPayChoose(amt,cat,mer,date,api){
 }
 function doCreate(channel,amt,cat,mer,date,api){
   const note=mer;
+  const key=(getCfg()&&getCfg().payKey||"").trim();
+  const headers={"Content-Type":"application/json"};
+  if(key) headers["x-api-key"]=key;
   setPayHint("正在创建支付订单…");
-  fetch(api+"/api/pay/create",{method:"POST",headers:{"Content-Type":"application/json"},
+  fetch(api+"/api/pay/create",{method:"POST",headers,
     body:JSON.stringify({channel,amount:amt,description:cat,category:cat,note,userId:getUid()})})
     .then(r=>r.json().then(j=>({ok:r.ok,j})))
     .then(({ok,j})=>{
       if(!ok||!j.ok) throw new Error(j.msg||"下单失败");
+      let payUrl=j.payUrl||"";
+      if(j.sandbox && key && payUrl) payUrl += (payUrl.indexOf("?")>=0?"&":"?") + "key=" + encodeURIComponent(key);
       const pending={payApi:api,outTradeNo:j.outTradeNo,record:{date,type:"out",cat,amount:amt,note:mer}};
       localStorage.setItem("wb_pending_pay",JSON.stringify(pending));
       document.querySelectorAll(".pay-sheet").forEach(s=>s.remove());
-      window.location.href=j.payUrl;
+      window.location.href=payUrl;
     })
     .catch(err=>setPayHint("创建订单失败："+(err.message||err)));
 }
@@ -2388,7 +2393,9 @@ function pollPendingPay(){
   setPayHint("⏳ 支付确认中…（完成支付后回到本页会自动记账）");
   const iv=setInterval(async()=>{
     try{
-      const r=await fetch(`${p.payApi}/api/pay/query?out_trade_no=${encodeURIComponent(p.outTradeNo)}`).then(x=>x.json());
+      const key=(getCfg()&&getCfg().payKey||"").trim();
+      const q=`${p.payApi}/api/pay/query?out_trade_no=${encodeURIComponent(p.outTradeNo)}`+(key?("&key="+encodeURIComponent(key)):"");
+      const r=await fetch(q).then(x=>x.json());
       if(r.ok&&r.status==="paid"){
         clearInterval(iv);
         writeRecord(p.record);
@@ -2402,8 +2409,8 @@ function pollPendingPay(){
   },2000);
   setTimeout(()=>clearInterval(iv),180000);
 }
-function savePayApi(){ const v=$("#c-payapi").value.trim(); const c=getCfg()||{}; c.payApi=v; localStorage.setItem(CFG_KEY, JSON.stringify(c)); setPayHint(v?"已保存后端地址":"已清空后端地址"); }
-function clearPayApi(){ const c=getCfg()||{}; delete c.payApi; localStorage.setItem(CFG_KEY, JSON.stringify(c)); setPayHint("已清空后端地址"); }
+function savePayApi(){ const v=$("#c-payapi").value.trim(); const k=$("#c-paykey").value.trim(); const c=getCfg()||{}; c.payApi=v; c.payKey=k; localStorage.setItem(CFG_KEY, JSON.stringify(c)); setPayHint(v?"已保存后端地址与密钥":"已清空后端地址"); }
+function clearPayApi(){ const c=getCfg()||{}; delete c.payApi; delete c.payKey; localStorage.setItem(CFG_KEY, JSON.stringify(c)); setPayHint("已清空后端地址"); }
 
 function normUrl(u){
   u=(u||"").trim();
@@ -2557,8 +2564,9 @@ function renderModal(){
   // 真实支付后端设置（始终可见）
   h+=`<div class="set-block"><h3>💳 真实支付（后端服务）</h3>
     <div class="field"><label>后端服务地址（带支付的服务器）</label><input id="c-payapi" value="${esc((getCfg()&&getCfg().payApi||'')||'')}" placeholder="https://your-server.example.com"/></div>
+    <div class="field"><label>后端密钥（API Key，可选）</label><input id="c-paykey" value="${esc((getCfg()&&getCfg().payKey||'')||'')}" placeholder="与后端 API_KEY 一致；留空则不做校验"/></div>
     <div class="row2"><button class="btn sm" onclick="savePayApi()">保存</button><button class="btn sm ghost" onclick="clearPayApi()">清空</button></div>
-    <div class="tip">填入后端地址后「立即支付」即可发起真实支付（需后端配置了商户密钥）。部署方式见仓库 README。</div>
+    <div class="tip">填入后端地址后「立即支付」即可发起真实支付（需后端配置了商户密钥）。公网部署时建议设置后端 API_KEY，并在此处填入相同密钥，接口才会被放行。部署方式见仓库 README。</div>
   </div>`;
   // 主题配色选择器（所有模式都可见）
   h+=`<div class="theme-block"><div class="theme-label">🎨 主题配色</div>
