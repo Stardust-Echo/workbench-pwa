@@ -572,6 +572,8 @@
   .rec-row .fi{font-size:17px}
   .rec-row .txt{flex:1; min-width:0}
   .rec-row .meta{color:var(--muted); font-size:13px; white-space:nowrap}
+  .rec-card{margin-top:10px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#FBF7EF}
+  .rec-card .rec-h{font-size:13px; font-weight:600; color:var(--green-d); margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -1788,6 +1790,29 @@ const VIEWS = {
       </div>
       <div class="progress"><i style="width:${p}%"></i></div>
       <div class="add money-add" style="margin-top:14px">
+        <label class="img-btn cam" style="grid-column:1 / -1; justify-content:center">📷 识图记账<input type="file" accept="image/*" capture="environment" hidden onchange="onReceiptImg(this)"/></label>
+        ${moneyImg?'<button class="btn" onclick="recognizeReceipt()">🔍 识别</button>':'<span class="meta" style="align-self:center">拍小票/账单，自动识别分类</span>'}
+        ${moneyImg?'<span class="del" style="align-self:center; cursor:pointer" onclick="clearReceiptImg()">重拍</span>':''}
+      </div>
+      ${moneyImg?`<div class="rec-prev" style="margin-top:8px"><img src="${moneyImg}"/><span class="x" onclick="clearReceiptImg()">✕</span></div>`:''}
+      ${moneyRec?`
+        <div class="rec-card">
+          <div class="rec-h">🧾 识别结果 · 确认即记账并云同步</div>
+          ${moneyRecState==='err'?`<div class="lv-load">${esc(moneyRecErr||'')}（已自动填入，可手动修改后确认）</div>`:''}
+          <div class="add money-add" style="margin-top:8px">
+            <select id="r-type"><option value="out"${moneyRec.type!=='in'?' selected':''}>－支出</option><option value="in"${moneyRec.type==='in'?' selected':''}>＋收入</option></select>
+            <input id="r-amt" type="number" value="${esc(moneyRec.amount||'')}" placeholder="金额"/>
+            <input id="r-cat" list="money-cats" value="${esc(moneyRec.cat||'')}" placeholder="类别"/>
+          </div>
+          <div class="add money-add" style="margin-top:8px">
+            <input id="r-mer" value="${esc(moneyRec.merchant||'')}" placeholder="对方/商家（备注）"/>
+            <button class="btn" onclick="confirmMoneyRec()">确认记账</button>
+          </div>
+        </div>`
+        : moneyRecState==='loading' ? '<div class="lv-load">识别中… 请稍候</div>'
+        : moneyRecState==='err' ? `<div class="lv-load">${esc(moneyRecErr||'识别失败，请重试')}</div>`
+        : ''}
+      <div class="add money-add" style="margin-top:14px">
         <select id="m-type"><option value="in">＋存入</option><option value="out">－支出</option></select>
         <input id="m-amt" type="number" placeholder="金额"/>
         <input id="m-cat" list="money-cats" placeholder="类别"/>
@@ -2038,6 +2063,7 @@ function uid(){return Date.now()*1000+(++_uidc%1000)}
 let moodImg=null, ideaImg=null, noteImg=null, whisperImg=null, songImg=null;
 /* 拍照识别食物热量：UI 状态 */
 let foodImg="", visionSetOpen=false, recState="none", recErr="", recList=[];
+let moneyImg="", moneyRecState="none", moneyRecErr="", moneyRec=null;
 /* 读取并自动压缩图片（最长边 900px，JPEG 0.7），避免 localStorage 爆炸 */
 function readImage(file, cb){
   if(!file) return;
@@ -2256,6 +2282,54 @@ function addAllRec(){
     state.foodLog.push({name:f.name, g:f.grams, per100, kcal});
   });
   recList=[]; recState="none";
+  save(); render();
+}
+
+/* ---------- 拍照识图记账 ---------- */
+const RECEIPT_VISION_PROMPT = "你是一个记账助手。请识别这张账单、小票、转账或支付截图，判断它是「支出」还是「收入」，并提取关键字段。只输出一个 JSON 对象，格式严格为：{\"type\":\"out 或 in\",\"amount\":金额数值(没有就填0),\"cat\":\"类别，从 饮食/出行费用/生活开销/购物/娱乐/居家/医疗/学习/人情/工资/兼职/红包/转账/其他 中选一个，没有就填 其他\",\"merchant\":\"商家名或付款/收款方，没有就填空字符串\",\"date\":\"交易日期 MM-DD，没有就填空字符串\",\"note\":\"一句话描述，没有就填空字符串}。不要输出任何额外文字，不要使用 markdown 代码块。如果完全无法识别，输出 {\"type\":\"out\",\"amount\":0,\"cat\":\"其他\",\"merchant\":\"\",\"date\":\"\",\"note\":\"无法识别\"}。";
+
+function onReceiptImg(inp){ if(!inp.files||!inp.files[0]) return; readImage(inp.files[0], d=>{ moneyImg=d; moneyRec=null; moneyRecState="none"; moneyRecErr=""; render(); }); }
+function clearReceiptImg(){ moneyImg=""; moneyRec=null; moneyRecState="none"; moneyRecErr=""; render(); }
+function recognizeReceipt(){
+  if(!moneyImg){ moneyRecErr="请先拍照或上传一张账单/小票"; moneyRecState="err"; render(); return; }
+  const v=state.vision||{};
+  if(!v.key){ moneyRecErr="请先在「⚙ 设置」里填入视觉识别 API Key（OpenRouter 免费 Key 即可）"; moneyRecState="err"; visionSetOpen=true; render(); return; }
+  moneyRecState="loading"; moneyRecErr=""; render();
+  const base=(v.base||"https://openrouter.ai/api/v1").replace(/\/$/,'')+"/chat/completions";
+  const body={ model:v.model, messages:[{role:"user", content:[
+    {type:"image_url", image_url:{url:moneyImg}},
+    {type:"text", text:RECEIPT_VISION_PROMPT}
+  ]}]};
+  fetch(base,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+v.key},body:JSON.stringify(body)})
+    .then(r=>r.json().then(j=>({ok:r.ok,j})))
+    .then(({ok,j})=>{
+      if(!ok||!j||j.error) throw new Error((j&&j.error&&(j.error.message||j.error))||"接口返回异常");
+      let txt="";
+      try{ txt=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||""; }catch(e){ txt=""; }
+      txt=String(txt||"").trim().replace(/^```(?:json)?/i,"").replace(/```$/,"").trim();
+      const s=txt.indexOf("{"), e=txt.lastIndexOf("}");
+      if(s<0||e<0) throw new Error("未能从识别结果中解析出 JSON");
+      const o=JSON.parse(txt.slice(s,e+1));
+      const type = o.type==="in"?"in":"out";
+      const amount = Number(o.amount)||0;
+      moneyRec={ type, amount, cat:String(o.cat||"").trim(), merchant:String(o.merchant||"").trim(), date:String(o.date||"").trim(), note:String(o.note||"").trim() };
+      moneyRecState = amount>0 ? "done" : "err";
+      moneyRecErr = amount>0 ? "" : "没认出金额，已自动填入，你改一下数字再确认即可";
+      render();
+    })
+    .catch(err=>{ moneyRecState="err"; moneyRecErr=String((err&&err.message)||err||"识别失败，请重试"); render(); });
+}
+function confirmMoneyRec(){
+  if(!moneyRec) return;
+  const type=$("#r-type")?$("#r-type").value:"out";
+  const amt=Number(($("#r-amt")?$("#r-amt").value:"")||moneyRec.amount||0);
+  if(!amt){ moneyRecErr="金额不能为零，请填写金额"; moneyRecState="err"; render(); return; }
+  const cat=(($("#r-cat")?$("#r-cat").value:"")||moneyRec.cat||(type==="in"?"收入":"支出")).trim();
+  const mer=(($("#r-mer")?$("#r-mer").value:"")||"").trim();
+  const date=(moneyRec.date&&/^\d{1,2}-\d{1,2}$/.test(moneyRec.date))?moneyRec.date:new Date().toISOString().slice(5,10);
+  state.money.records.unshift({date,type,cat,amount:amt,note:mer});
+  state.money.saved+=type==="in"?amt:-amt;
+  moneyImg=""; moneyRec=null; moneyRecState="none"; moneyRecErr="";
   save(); render();
 }
 
