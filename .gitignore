@@ -1,4 +1,9 @@
 node_modules/
+.env
+.env.local
+.env.*.local
+*.log
+site/
 android/.gradle/
 android/app/build/
 android/build/

@@ -2,14 +2,20 @@
   "name": "workbench-pwa",
   "version": "1.0.0",
   "private": true,
-  "description": "清晨工作台 - Capacitor Android 包装",
+  "description": "清晨工作台 - Capacitor Android 包装 + 后端真实支付（微信/支付宝）",
   "scripts": {
     "sync": "cap sync android",
-    "build:android": "cap sync android && cd android && gradlew assembleDebug"
+    "build:android": "cap sync android && cd android && gradlew assembleDebug",
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
   },
   "dependencies": {
     "@capacitor/android": "^6.1.2",
-    "@capacitor/core": "^6.1.2"
+    "@capacitor/core": "^6.1.2",
+    "@supabase/supabase-js": "^2.45.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.1.2"

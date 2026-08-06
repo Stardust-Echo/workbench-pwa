@@ -574,6 +574,10 @@
   .rec-row .meta{color:var(--muted); font-size:13px; white-space:nowrap}
   .rec-card{margin-top:10px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#FBF7EF}
   .rec-card .rec-h{font-size:13px; font-weight:600; color:var(--green-d); margin-bottom:6px}
+  .pay-hint{font-size:13px; color:var(--blue,#1677ff); min-height:18px; margin-top:10px; font-weight:600}
+  .pay-sheet{position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:flex-end; z-index:62}
+  .pay-sheet .ps-box{background:var(--card); width:100%; max-width:480px; margin:0 auto; border-radius:22px 22px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom)); max-height:86vh; overflow:auto}
+  .pay-sheet .ps-box h3{margin:0 0 12px; font-size:17px}
 </style>
 </head>
 <body>
@@ -1806,12 +1810,16 @@ const VIEWS = {
           </div>
           <div class="add money-add" style="margin-top:8px">
             <input id="r-mer" value="${esc(moneyRec.merchant||'')}" placeholder="对方/商家（备注）"/>
+          </div>
+          <div class="add money-add" style="margin-top:10px">
             <button class="btn" onclick="confirmMoneyRec()">确认记账</button>
+            ${moneyRec.type!=='in'?'<button class="btn" style="background:#1677ff" onclick="payNow()">💳 立即支付</button>':''}
           </div>
         </div>`
         : moneyRecState==='loading' ? '<div class="lv-load">识别中… 请稍候</div>'
         : moneyRecState==='err' ? `<div class="lv-load">${esc(moneyRecErr||'识别失败，请重试')}</div>`
         : ''}
+      <div id="pay-hint" class="pay-hint"></div>
       <div class="add money-add" style="margin-top:14px">
         <select id="m-type"><option value="in">＋存入</option><option value="out">－支出</option></select>
         <input id="m-amt" type="number" placeholder="金额"/>
@@ -2333,6 +2341,70 @@ function confirmMoneyRec(){
   save(); render();
 }
 
+/* ============ 真实支付（后端） ============ */
+function getUid(){ const n=getUserName(); if(n) return n; const c=getCfg(); return (c&&c.name||'').trim(); }
+function writeRecord(rec){ state.money.records.unshift(rec); state.money.saved += rec.type==="in"?rec.amount:-rec.amount; save(); }
+function setPayHint(t){ const el=$("#pay-hint"); if(el) el.textContent=t; }
+function payNow(){
+  if(!moneyRec) return;
+  const type=$("#r-type")?$("#r-type").value:"out";
+  const amt=Number(($("#r-amt")?$("#r-amt").value:"")||moneyRec.amount||0);
+  if(!amt){ moneyRecErr="金额不能为零，请填写金额"; moneyRecState="err"; render(); return; }
+  const cat=(($("#r-cat")?$("#r-cat").value:"")||moneyRec.cat||"支出").trim();
+  const mer=(($("#r-mer")?$("#r-mer").value:"")||moneyRec.merchant||"").trim();
+  const date=(moneyRec.date&&/^\d{1,2}-\d{1,2}$/.test(moneyRec.date))?moneyRec.date:new Date().toISOString().slice(5,10);
+  const api=(getCfg()&&getCfg().payApi||"").replace(/\/$/,'');
+  if(!api){ setPayHint("请先在「设置」填写后端服务地址（payApi）"); return; }
+  renderPayChoose(amt,cat,mer,date,api);
+}
+function renderPayChoose(amt,cat,mer,date,api){
+  const box=document.createElement("div");
+  box.className="pay-sheet";
+  box.innerHTML=`<div class="ps-box"><h3>💳 选择支付方式</h3>
+    <div style="font-size:15px;margin-bottom:14px">¥${Number(amt).toFixed(2)} · ${esc(cat)}</div>
+    <button class="btn" style="width:100%;margin-bottom:10px;background:#07c160" onclick="doCreate('wechat',${amt},'${esc(cat)}','${esc(mer)}','${esc(date)}','${esc(api)}')">微信支付</button>
+    <button class="btn" style="width:100%;margin-bottom:10px;background:#1677ff" onclick="doCreate('alipay',${amt},'${esc(cat)}','${esc(mer)}','${esc(date)}','${esc(api)}')">支付宝</button>
+    <button class="mini" style="width:100%" onclick="this.closest('.pay-sheet').remove()">取消</button></div>`;
+  document.body.appendChild(box);
+}
+function doCreate(channel,amt,cat,mer,date,api){
+  const note=mer;
+  setPayHint("正在创建支付订单…");
+  fetch(api+"/api/pay/create",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({channel,amount:amt,description:cat,category:cat,note,userId:getUid()})})
+    .then(r=>r.json().then(j=>({ok:r.ok,j})))
+    .then(({ok,j})=>{
+      if(!ok||!j.ok) throw new Error(j.msg||"下单失败");
+      const pending={payApi:api,outTradeNo:j.outTradeNo,record:{date,type:"out",cat,amount:amt,note:mer}};
+      localStorage.setItem("wb_pending_pay",JSON.stringify(pending));
+      document.querySelectorAll(".pay-sheet").forEach(s=>s.remove());
+      window.location.href=j.payUrl;
+    })
+    .catch(err=>setPayHint("创建订单失败："+(err.message||err)));
+}
+function pollPendingPay(){
+  let p; try{ p=JSON.parse(localStorage.getItem("wb_pending_pay")||"null"); }catch(e){ return; }
+  if(!p) return;
+  setPayHint("⏳ 支付确认中…（完成支付后回到本页会自动记账）");
+  const iv=setInterval(async()=>{
+    try{
+      const r=await fetch(`${p.payApi}/api/pay/query?out_trade_no=${encodeURIComponent(p.outTradeNo)}`).then(x=>x.json());
+      if(r.ok&&r.status==="paid"){
+        clearInterval(iv);
+        writeRecord(p.record);
+        localStorage.removeItem("wb_pending_pay");
+        setPayHint("✅ 支付成功，已记账并云同步");
+        moneyImg=""; moneyRec=null; moneyRecState="none"; moneyRecErr="";
+        render();
+        setTimeout(()=>setPayHint(""),2500);
+      }
+    }catch(e){}
+  },2000);
+  setTimeout(()=>clearInterval(iv),180000);
+}
+function savePayApi(){ const v=$("#c-payapi").value.trim(); const c=getCfg()||{}; c.payApi=v; localStorage.setItem(CFG_KEY, JSON.stringify(c)); setPayHint(v?"已保存后端地址":"已清空后端地址"); }
+function clearPayApi(){ const c=getCfg()||{}; delete c.payApi; localStorage.setItem(CFG_KEY, JSON.stringify(c)); setPayHint("已清空后端地址"); }
+
 function normUrl(u){
   u=(u||"").trim();
   if(!u) return "";
@@ -2482,6 +2554,12 @@ function renderModal(){
         <div class="tip">免费建项目：<a href="https://supabase.com" target="_blank">supabase.com</a> → 复制 Project URL 与 Anon Key（Project Settings → API），并在 SQL Editor 执行 supabase-schema.sql。</div>
       </div>`;
   }
+  // 真实支付后端设置（始终可见）
+  h+=`<div class="set-block"><h3>💳 真实支付（后端服务）</h3>
+    <div class="field"><label>后端服务地址（带支付的服务器）</label><input id="c-payapi" value="${esc((getCfg()&&getCfg().payApi||'')||'')}" placeholder="https://your-server.example.com"/></div>
+    <div class="row2"><button class="btn sm" onclick="savePayApi()">保存</button><button class="btn sm ghost" onclick="clearPayApi()">清空</button></div>
+    <div class="tip">填入后端地址后「立即支付」即可发起真实支付（需后端配置了商户密钥）。部署方式见仓库 README。</div>
+  </div>`;
   // 主题配色选择器（所有模式都可见）
   h+=`<div class="theme-block"><div class="theme-label">🎨 主题配色</div>
     <div class="theme-row">${THEMES.map(t=>`<button class="theme-dot${curTheme.key===t.key?' on':''}" title="${t.name}" style="background:${t.v.green}" onclick="pickTheme('${t.key}')"></button>`).join("")}
@@ -2498,7 +2576,7 @@ function renderModal(){
 function saveCfg(){
   const url=$("#c-url").value.trim(), key=$("#c-key").value.trim();
   if(!url||!key){ $("#c-err").textContent="URL 和 Key 都要填"; return; }
-  localStorage.setItem(CFG_KEY, JSON.stringify({url,key}));
+  const c=getCfg()||{}; localStorage.setItem(CFG_KEY, JSON.stringify({...c,url,key}));
   initSb(); renderAccount();
 }
 function editCfg(){ localStorage.removeItem(CFG_KEY); sb=null; user=null; renderAccount(); }
@@ -2550,7 +2628,7 @@ async function pullCloud(manual){
   const savedCard = loadCard(); if(savedCard) document.documentElement.style.setProperty("--card", savedCard);
   const savedBtn = loadBtn(); if(savedBtn){ document.documentElement.style.setProperty("--btn", savedBtn); document.documentElement.style.setProperty("--btn-d", darken(savedBtn,.12)); }
   const savedFont = loadFont(); if(savedFont){ const f=FONTS.find(x=>x.key===savedFont); if(f) applyFont(f.stack); }
-  buildNav(); syncHabitTasks(); syncFitTasks(); songRecs = pickSongRecs(4); render(); renderAccount(); initSb();
+  buildNav(); syncHabitTasks(); syncFitTasks(); songRecs = pickSongRecs(4); render(); renderAccount(); initSb(); pollPendingPay();
   if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
   // 每 60 秒检测跨天：次日自动清掉旧习惯/运动任务、刷新今日清单
   setInterval(()=>{ const t=dayKey(); if(state.habitTaskDate!==t){ syncHabitTasks(); syncFitTasks(); if(current==="tasks"||current==="home") render(); } }, 60000);
