@@ -503,6 +503,12 @@
   .song-card .sc-play:active{filter:brightness(.93)}
   .cover-ph{display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; background:linear-gradient(135deg, hsl(var(--h),62%,60%), hsl(calc(var(--h) + 38),64%,50%)); text-shadow:0 1px 2px rgba(0,0,0,.18)}
   .song-feat .sf-cover.cover-ph{font-size:26px}
+  .song-feat .sf-refresh{font-size:12px}
+  .song-feat .sf-recs{display:flex; flex-direction:column; gap:10px; position:relative; z-index:1; margin-top:2px}
+  .song-feat .sf-rec{display:flex; gap:12px; align-items:center}
+  .song-feat .sf-rec .sf-rec-mid{flex:1; min-width:0}
+  .song-feat .sf-rec .sc-play{flex:0 0 auto; font-size:12px; color:#fff; text-decoration:none; background:var(--btn); border-radius:20px; padding:5px 14px; font-weight:600; white-space:nowrap; box-shadow:0 3px 8px color-mix(in srgb, var(--btn) 30%, transparent)}
+  .song-feat .sf-rec .sc-play:active{filter:brightness(.93)}
   .song-card .sc-cover.cover-ph{font-size:20px}
   /* ---------- 歌词搜索 ---------- */
   .lyric-box{border:1px solid var(--line); border-radius:18px; padding:16px; background:var(--card); margin-bottom:16px}
@@ -694,7 +700,7 @@ const FAMOUS = [
   {t:"我学到的任何有价值的知识，都是由自学中得来的。", a:"达尔文"}
 ];
 let famousIdx = 0;
-let songIdx = 0;
+let songRecs = [];
 let songFilter = "全部";
 let songTab = "hot";
 let lyricQ="", lyricHits=[], lyricOpen=-1, lyricOpenHit=null, lyricLRC="", lyricState="none", lyricLoad="none", lyricErr="";
@@ -1519,8 +1525,6 @@ const VIEWS = {
     const isMine = songTab==="mine";
     const pool = isMine ? mine : hot;
     const filt = (isMine && songFilter && songFilter!=="全部") ? mine.filter(s=>s.style===songFilter) : pool;
-    const allPool = hot.concat(mine);
-    const feat = allPool.length ? allPool[songIdx % allPool.length] : null;
     const styles = [...new Set(pool.map(s=>s.style).filter(Boolean))];
     return `
     <div class="card">
@@ -1528,16 +1532,19 @@ const VIEWS = {
 
       <div class="song-feat">
         <div class="sf-note">♪</div>
-        <div class="sf-h"><span>🎧 今日推荐</span>${feat?'<span onclick="shuffleSong()">🎲 换一首</span>':''}</div>
-        ${feat?`
-          <div class="sf-card">
-            ${songCover(feat,"sf-cover")}
-            <div style="min-width:0">
-              <div class="sf-title">${esc(feat.title)} · ${esc(feat.singer||"")}</div>
-              ${feat.lyric?`<div class="sf-reason">${esc(feat.lyric)}</div>`:''}
-            </div>
+        <div class="sf-h"><span>🎧 今日推荐</span><span class="sf-refresh" onclick="refreshRecs()">🔄 换一批</span></div>
+        ${songRecs.length?`
+          <div class="sf-recs">
+            ${songRecs.map(s=>`
+              <div class="sf-rec">
+                ${songCover(s,"sf-cover")}
+                <div class="sf-rec-mid">
+                  <div class="sf-title">${esc(s.title)} · ${esc(s.singer||"")}</div>
+                  ${s.lyric?`<div class="sf-reason">${esc(s.lyric)}</div>`:''}
+                </div>
+                <a class="sc-play" href="${esc(songPlayUrl(s))}" target="_blank" rel="noopener">▶ 试听</a>
+              </div>`).join("")}
           </div>
-          <a class="btn ghost" href="${esc(songPlayUrl(feat))}" target="_blank" rel="noopener">▶ 试听 / 跳转</a>
         `:'<div class="empty" style="padding:4px 0">没有可推荐的音乐</div>'}
       </div>
 
@@ -2120,7 +2127,15 @@ function addSong(){
   const u=$("#s-url"); if(u) u.value="";
 }
 function delSong(idx){ if(idx>=0 && idx<state.read.length) state.read.splice(idx,1); save(); render(); }
-function shuffleSong(){ const n=(HOT_SONGS.length + (state.read||[]).length); if(n) songIdx=Math.floor(Math.random()*n); render(); }
+/* 从「热门 + 我的收藏」里随机挑一组作为今日推荐，可一键换一批 */
+function pickSongRecs(n){
+  const pool = HOT_SONGS.concat(state.read||[]);
+  if(!pool.length) return [];
+  const arr = pool.slice();
+  for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr.slice(0, Math.min(n||4, arr.length));
+}
+function refreshRecs(){ songRecs = pickSongRecs(4); render(); }
 function setSongFilter(s){ songFilter=s; render(); }
 function setSongTab(t){ songTab=t; render(); }
 function collectHot(idx){ const h=HOT_SONGS[idx]; if(!h) return; if((state.read||[]).some(x=>x.title===h.title && x.singer===h.singer)) return; state.read.push({title:h.title,singer:h.singer,style:h.style,lyric:h.lyric,url:h.url,ts:Date.now()}); save(); render(); }
@@ -2495,7 +2510,7 @@ async function pullCloud(manual){
   const savedCard = loadCard(); if(savedCard) document.documentElement.style.setProperty("--card", savedCard);
   const savedBtn = loadBtn(); if(savedBtn){ document.documentElement.style.setProperty("--btn", savedBtn); document.documentElement.style.setProperty("--btn-d", darken(savedBtn,.12)); }
   const savedFont = loadFont(); if(savedFont){ const f=FONTS.find(x=>x.key===savedFont); if(f) applyFont(f.stack); }
-  buildNav(); syncHabitTasks(); syncFitTasks(); render(); renderAccount(); initSb();
+  buildNav(); syncHabitTasks(); syncFitTasks(); songRecs = pickSongRecs(4); render(); renderAccount(); initSb();
   if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
   // 每 60 秒检测跨天：次日自动清掉旧习惯/运动任务、刷新今日清单
   setInterval(()=>{ const t=dayKey(); if(state.habitTaskDate!==t){ syncHabitTasks(); syncFitTasks(); if(current==="tasks"||current==="home") render(); } }, 60000);
