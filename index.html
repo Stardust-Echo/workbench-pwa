@@ -216,6 +216,8 @@
     }
     .tabbar::-webkit-scrollbar{display:none}
     .tabbar::after{content:""; flex:0 0 6px}
+    .tabbar{transition:transform .25s ease}
+    .tabbar.kb-hidden{transform:translateY(110%)}
     .tab{
       flex:0 0 68px; padding:6px 2px; display:flex; flex-direction:column;
       align-items:center; gap:3px; font-size:11px; color:var(--muted);
@@ -1395,7 +1397,7 @@ function saveUserName(){
 }
 function save_local(){ localStorage.setItem(KEY, JSON.stringify(state)) }
 
-const APP_VERSION = "2.4.0";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
+const APP_VERSION = "2.4.1";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
 let state = mergeState(load());
 /* _v: 版本号；旧数据无 _v 视为种子数据，自动迁移为空初始态 */
 function defaultState(){ return {
@@ -3175,6 +3177,18 @@ function doUpdate(){
   checkForUpdate();                                   // 启动即检测一次新版本
   setInterval(checkForUpdate, 5*60*1000);            // 之后每 5 分钟静默检测
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) checkForUpdate(); });
+  // 键盘弹起时收起底部 Tab，避免压住输入法（手机端）
+  (function(){
+    if(!window.visualViewport) return;
+    var tb=document.getElementById('tabbar'); if(!tb) return;
+    var baseH=window.innerHeight;
+    function k(){
+      var cur=window.visualViewport.height;
+      tb.classList.toggle('kb-hidden', baseH-cur>120);
+    }
+    window.visualViewport.addEventListener('resize', k);
+    setTimeout(function(){ baseH=window.innerHeight; }, 60);
+  })();
   // 每 60 秒检测跨天：次日自动清掉旧习惯/运动任务、刷新今日清单
   setInterval(()=>{ const t=dayKey(); if(state.habitTaskDate!==t){ syncHabitTasks(); syncFitTasks(); if(current==="tasks"||current==="home") render(); } }, 60000);
 
