@@ -1397,7 +1397,7 @@ function saveUserName(){
 }
 function save_local(){ localStorage.setItem(KEY, JSON.stringify(state)) }
 
-const APP_VERSION = "2.4.2";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
+const APP_VERSION = "2.4.3";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
 let state = mergeState(load());
 /* _v: 版本号；旧数据无 _v 视为种子数据，自动迁移为空初始态 */
 function defaultState(){ return {
@@ -3131,19 +3131,38 @@ async function pullCloud(manual){
 
 /* ================= 在线更新检测 ================= */
 function cmpVer(a,b){ const x=String(a).split('.').map(Number), y=String(b).split('.').map(Number); for(let i=0;i<3;i++){ const d=(x[i]||0)-(y[i]||0); if(d) return d; } return 0; }
+const APK_DOWNLOAD_URL = 'https://github.com/Stardust-Echo/workbench-pwa/actions/workflows/build-android.yml';
+async function fetchRemoteVersion(){
+  const urls = [
+    'https://cdn.jsdelivr.net/gh/Stardust-Echo/workbench-pwa@master/version.json',
+    'https://raw.githubusercontent.com/Stardust-Echo/workbench-pwa/master/version.json'
+  ];
+  for(const u of urls){
+    try{
+      const r = await fetch(u, {cache:'no-store'});
+      if(!r.ok) continue;
+      const j = await r.json();
+      if(j && j.version) return j;
+    }catch(e){ /* 试下一个源 */ }
+  }
+  return null;
+}
 async function checkForUpdate(){
-  try{
-    const r = await fetch('version.json', {cache:'no-store'});
-    if(!r.ok) return false;
-    const j = await r.json();
-    if(j && j.version && cmpVer(j.version, APP_VERSION) > 0){
-      const bar = document.getElementById('upd');
-      document.getElementById('upd-v').textContent = 'v'+j.version;
-      document.getElementById('upd-n').textContent = j.notes || '';
-      if(bar) bar.hidden = false;
-      return true;
-    }
-  }catch(e){ /* 离线或读不到版本文件都忽略 */ }
+  let j = await fetchRemoteVersion();
+  if(!j){
+    // 兜底：相对路径（浏览器/PWA 同源部署用；APK 里取到的是包内死路）
+    try{
+      const r = await fetch('version.json', {cache:'no-store'});
+      if(r.ok){ j = await r.json(); }
+    }catch(e){}
+  }
+  if(j && j.version && cmpVer(j.version, APP_VERSION) > 0){
+    const bar = document.getElementById('upd');
+    document.getElementById('upd-v').textContent = 'v'+j.version;
+    document.getElementById('upd-n').textContent = j.notes || '';
+    if(bar) bar.hidden = false;
+    return true;
+  }
   return false;
 }
 function hideUpdate(){ const b=document.getElementById('upd'); if(b) b.hidden=true; }
@@ -3155,10 +3174,17 @@ async function manualCheckUpdate(){
 }
 function doUpdate(){
   hideUpdate();
-  if(navigator.serviceWorker){
-    try{ navigator.serviceWorker.getRegistration().then(reg=>{ if(reg) reg.update(); }).catch(()=>{}); }catch(e){}
+  const isAPK = !!window.Capacitor || location.hostname === 'localhost';
+  if(isAPK){
+    // APK 不能自更新：直接打开 GitHub Actions 页面让用户下载新 APK
+    try{ window.open(APK_DOWNLOAD_URL, '_blank'); }catch(e){}
+  } else {
+    // 浏览器/PWA：SW 更新并刷新
+    if(navigator.serviceWorker){
+      try{ navigator.serviceWorker.getRegistration().then(reg=>{ if(reg) reg.update(); }).catch(()=>{}); }catch(e){}
+    }
+    setTimeout(()=>location.reload(true), 120);
   }
-  setTimeout(()=>location.reload(true), 120);
 }
 
 /* ---------------- 启动 ---------------- */
