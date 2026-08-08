@@ -628,7 +628,7 @@
   .entry-img img{width:100%; max-height:260px; object-fit:cover; display:block}
 
   /* ---------- 拍照识别食物热量 ---------- */
-  .cam{background:var(--card); border-style:solid; border-color:var(--green); color:var(--green-d)}
+  .cam{background:color-mix(in srgb, var(--green) 14%, transparent); border-style:solid; border-color:var(--green); color:var(--green-d); font-weight:600}
   .vision-set{display:flex; flex-direction:column; gap:8px; margin-top:10px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#FBF7EF}
   .vision-set input{width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:9px; background:var(--card); color:var(--ink); font-size:13px; outline:none}
   .vision-set code{background:#efe7d6; padding:1px 5px; border-radius:5px; font-size:12px}
@@ -642,6 +642,8 @@
   .rec-row .meta{color:var(--muted); font-size:13px; white-space:nowrap}
   .rec-card{margin-top:10px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#FBF7EF}
   .rec-card .rec-h{font-size:13px; font-weight:600; color:var(--green-d); margin-bottom:6px}
+  .rec-hint{grid-column:1 / -1; display:flex; align-items:center; gap:8px; font-size:12.5px; line-height:1.5;
+    color:var(--muted); background:#FBF7EF; border:1px dashed var(--line); border-radius:12px; padding:10px 12px}
   .pay-hint{font-size:13px; color:var(--blue,#1677ff); min-height:18px; margin-top:10px; font-weight:600}
   .pay-sheet{position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:flex-end; z-index:62}
   .pay-sheet .ps-box{background:var(--card); width:100%; max-width:480px; margin:0 auto; border-radius:22px 22px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom)); max-height:86vh; overflow:auto}
@@ -1397,7 +1399,7 @@ function saveUserName(){
 }
 function save_local(){ localStorage.setItem(KEY, JSON.stringify(state)) }
 
-const APP_VERSION = "2.4.3";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
+const APP_VERSION = "2.4.4";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
 let state = mergeState(load());
 /* _v: 版本号；旧数据无 _v 视为种子数据，自动迁移为空初始态 */
 function defaultState(){ return {
@@ -1954,7 +1956,7 @@ const VIEWS = {
     <div class="card">
       <h2>🌈 心情记录</h2>
       <div class="moods">
-        ${opts.map(o=>`<div class="mood ${(sel&&sel.emoji===o[0])||(last&&last.emoji===o[0])?'on':''}" onclick="logMood('${o[0]}','${o[1]}')">${o[0]}</div>`).join("")}
+        ${opts.map(o=>`<div class="mood ${sel&&sel.emoji===o[0]?'on':''}" onclick="logMood('${o[0]}','${o[1]}')">${o[0]}</div>`).join("")}
       </div>
       ${sel?`<div style="margin:6px 2px 4px;font-size:13px;color:var(--muted);line-height:1.4">当前已选：<span style="font-size:20px;vertical-align:middle">${sel.emoji}</span> <b style="color:var(--gold-d);font-size:14px">${sel.label}</b><span style="margin-left:6px;color:var(--gold-d);font-size:12px">✓ 点其他表情可重新选择</span></div>`:''}
       <div class="add"><input id="m-note" placeholder="今天发生了什么？（可选）"/><button class="btn" onclick="saveMoodNote()">记一笔</button></div>
@@ -2251,7 +2253,7 @@ const VIEWS = {
       <div class="progress"><i style="width:${p}%"></i></div>
       <div class="add money-add" style="margin-top:14px">
         <label class="img-btn cam" style="grid-column:1 / -1; justify-content:center">📷 识图记账<input type="file" accept="image/*" capture="environment" hidden onchange="onReceiptImg(this)"/></label>
-        ${moneyImg?'<button class="btn" onclick="recognizeReceipt()">🔍 识别</button>':'<span class="meta" style="align-self:center">拍小票/账单，自动识别分类</span>'}
+        ${moneyImg?'<button class="btn" onclick="recognizeReceipt()">🔍 识别</button>':'<span class="rec-hint">📸 拍下小票或账单，AI 自动识别金额与分类</span>'}
         ${moneyImg?'<span class="del" style="align-self:center; cursor:pointer" onclick="clearReceiptImg()">重拍</span>':''}
       </div>
       ${moneyImg?`<div class="rec-prev" style="margin-top:8px"><img src="${moneyImg}"/><span class="x" onclick="clearReceiptImg()">✕</span></div>`:''}
@@ -2993,7 +2995,7 @@ function delHabit(i){const h=state.habit[i];const id=h&&h.id;
 function toggleHabit(i,j){state.habit[i].week[j]=state.habit[i].week[j]?0:1;save();render()}
 function logMood(e,l){state._lastMood={emoji:e,label:l};save();render()}
 function saveMoodNote(){const note=$("#m-note").value.trim();const last=state._lastMood||{emoji:"🙂",label:"一般"};
-  state.mood.push({id:uid(),emoji:last.emoji,label:last.label,note,img:moodImg,ts:Date.now()});moodImg=null;save();render();
+  state.mood.push({id:uid(),emoji:last.emoji,label:last.label,note,img:moodImg,ts:Date.now()});moodImg=null;state._lastMood=null;save();render();
   const i=$("#m-note"); if(i) i.value="";}
 function addIdea(){const v=$("#i-in").value.trim();if(!v&&!ideaImg)return;state.idea.unshift({text:v,img:ideaImg});ideaImg=null;save();render();const i=$("#i-in");if(i)i.value="";}
 function delIdea(i){state.idea.splice(i,1);save();render()}

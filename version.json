@@ -1,5 +1,5 @@
 {
-  "version": "2.4.3",
-  "notes": "修复 APK「检查更新」永远显示已是最新：之前用相对 fetch('version.json') 在 Capacitor WebView 里只读到包内那份，永远等于 APP_VERSION → 永远提示最新。现在改为先从 jsDelivr / raw.githubusercontent.com 拉线上 master 的 version.json，发现新版本时「立即更新」按钮改成打开 GitHub Actions 页面让用户下载新 APK（Capacitor 包无法自更新，必须手动装新包）。心情表情点击高亮持久化、输入法弹起时底部 Tab 自动让位等修复一并保留。",
+  "version": "2.4.4",
+  "notes": "体验优化：心情「记一笔」保存后表情高亮自动重置取消；记账区提示文案从「拍小票/账单，自动识别分类」升级为更精致的引导提示，并把「识图记账」按钮优化为更醒目的 CTA。检查更新、键盘让位等修复保留。",
   "date": "2026-08-03"
 }
