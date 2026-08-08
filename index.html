@@ -143,7 +143,9 @@
   .moods{display:flex;gap:10px;flex-wrap:wrap}
   .mood{width:52px;height:52px;border-radius:14px;background:#FBF7EF;border:1px solid var(--line);
     font-size:26px;display:grid;place-items:center;cursor:pointer;transition:.15s}
-  .mood.on,.mood:hover{border-color:var(--gold);background:#FFF6E4}
+  .mood:hover{border-color:var(--gold);background:#FFF6E4}
+  .mood.on{border-color:var(--gold);background:#FFF6E4;box-shadow:0 0 0 3px rgba(217,164,65,.35);transform:scale(1.08)}
+  .divider{margin:20px auto;width:64%;height:1px;background:var(--line);position:relative;border-radius:1px}
 
   .notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
   .note{padding:14px 14px 30px;border-radius:14px;min-height:110px;position:relative;
@@ -1942,13 +1944,14 @@ const VIEWS = {
     </div>`,
 
   mood:()=>{
-    const opts=[["😊","开心"],["😌","平静"],["😟","焦虑"],["😴","疲惫"],["😡","烦躁"],["🥰","幸福"]];
+    const opts=[["😊","开心"],["😄","兴奋"],["🥰","幸福"],["😌","平静"],["🤔","沉思"],["😎","自信"],["😴","疲惫"],["😟","焦虑"],["😢","难过"],["😡","烦躁"]];
+    const sel = state._lastMood;
     const last = state.mood[state.mood.length-1];
     return `
     <div class="card">
       <h2>🌈 心情记录</h2>
       <div class="moods">
-        ${opts.map(o=>`<div class="mood ${last&&last.emoji===o[0]?'on':''}" onclick="logMood('${o[0]}','${o[1]}')">${o[0]}</div>`).join("")}
+        ${opts.map(o=>`<div class="mood ${(sel&&sel.emoji===o[0])||(last&&last.emoji===o[0])?'on':''}" onclick="logMood('${o[0]}','${o[1]}')">${o[0]}</div>`).join("")}
       </div>
       <div class="add"><input id="m-note" placeholder="今天发生了什么？（可选）"/><button class="btn" onclick="saveMoodNote()">记一笔</button></div>
       <div class="img-bar">
@@ -2230,7 +2233,7 @@ const VIEWS = {
     </div>`,
 
   money:()=>{
-    const p = Math.round(state.money.saved/state.money.goal*100);
+    const p = state.money.goal>0 ? Math.round(state.money.saved/state.money.goal*100) : 0;
     const fundTotal = state.funds.reduce((s,f)=>s+f.value,0);
     const fundChg = state.funds.reduce((s,f)=>s+f.value*f.change/100,0);
     return `
@@ -2300,6 +2303,7 @@ const VIEWS = {
             ${r.type==='in'?'+':'-'}${r.amount.toLocaleString()}</div>
           <div class="del" onclick="delMoney(${i})">删</div></div>`).join("")}
     </div>
+    <div class="divider"></div>
     <div class="card">
       <h2>🐨 小荷包 <span class="tag">专款专用 · 想存就存</span><button class="btn ghost sm" onclick="showAddPot()">＋ 新建荷包</button></h2>
       <div id="pot-add" class="add money-add" style="margin-top:10px; display:none">
@@ -2321,6 +2325,7 @@ const VIEWS = {
         </div>`;
       }).join(""):'<div class="empty">还没有荷包，点「＋ 新建荷包」建一个旅游 / 存款小金库吧</div>'}
     </div>
+    <div class="divider"></div>
     <div class="card">
       <h2>📈 基金持仓 <span class="tag">总值 ¥${fundTotal.toLocaleString()}</span></h2>
       <div class="row"><div class="txt"><b>持仓总市值</b></div>
@@ -2552,8 +2557,8 @@ function paySettingsHtml(){
       <div class="set-sec">
         <div class="set-t">💳 同步支付记录（后端服务）</div>
         <div class="set-hint">填入后端服务地址后，记账确认页点「立即支付」即可发起支付；支付成功会自动记一笔支出并云同步。公网部署时建议后端设置 API_KEY，并在此处填入相同密钥；沙箱模式无需密钥即可联调。</div>
-        <div class="field"><label>后端服务地址（带支付的服务器）</label><input id="c-payapi" value="${esc(c.payApi||'')}" placeholder="https://your-server.example.com"/></div>
-        <div class="field"><label>后端密钥（API Key，留空则不做校验）</label><input id="c-paykey" type="password" autocomplete="off" value="${esc(c.payKey||'')}" placeholder="与后端 API_KEY 一致"/></div>
+        <div class="field"><label>后端服务地址（带支付的服务器）</label><input id="c-payapi" value="${esc(c.payApi||'')}" placeholder="请填写后端服务地址"/></div>
+        <div class="field"><label>后端密钥（留空则不做校验）</label><input id="c-paykey" type="password" autocomplete="off" value="${esc(c.payKey||'')}" placeholder="与后端密钥一致"/></div>
         <div class="row2"><button class="btn sm" onclick="savePayApi()">保存</button><button class="btn sm ghost" onclick="clearPayApi()">清空</button></div>
         <div id="pay-hint" class="set-hint"></div>
       </div>`;
