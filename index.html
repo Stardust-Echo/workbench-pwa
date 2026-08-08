@@ -488,6 +488,10 @@
   .fun-detail .fd-v{flex:1; min-width:0}
   .fun-detail .yi{color:var(--green-d); font-weight:600}
   .fun-detail .ji{color:#D9695F; font-weight:600}
+  /* FIX: 梅花易数等内容溢出后允许滚动（兼容 .box 父层可能设的 overflow:hidden） */
+  .box.fun-detail,.fun-detail{max-height:86vh; max-height:86dvh; overflow-y:auto !important; -webkit-overflow-scrolling:touch; padding-right:4px}
+  .fun-detail::-webkit-scrollbar{width:5px}
+  .fun-detail::-webkit-scrollbar-thumb{background:var(--line); border-radius:3px}
   .fun-bars{margin:4px 0 2px}
   .fun-bar{display:flex; align-items:center; gap:10px; margin-bottom:9px; font-size:13px}
   .fun-bar .fb-k{flex:0 0 38px; color:var(--muted)}
@@ -744,6 +748,17 @@
   .lg-qc.tasks   { --cbar:#7FB3A3; --cgb:rgba(127,179,163,.18) }
   /* 旧版空状态保留兜底 */
   .lg-empty{padding:24px 10px; text-align:center; color:var(--muted); font-size:14px}
+  /* 在线更新提示条 */
+  .upd{position:fixed; left:0; right:0; bottom:0; z-index:9999; display:flex; justify-content:center; padding:12px; pointer-events:none}
+  .upd[hidden]{display:none}
+  .upd-card{pointer-events:auto; max-width:440px; width:calc(100% - 24px); background:linear-gradient(135deg,#5B8DEF,#3E6FD8); color:#fff; border-radius:16px; padding:14px 16px; box-shadow:0 10px 30px rgba(40,70,150,.35); animation:updIn .35s ease}
+  @keyframes updIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .upd-h{font-size:15px; font-weight:700; display:flex; align-items:center; gap:6px}
+  .upd-h b{background:rgba(255,255,255,.22); padding:1px 8px; border-radius:999px; font-weight:800}
+  .upd-n{font-size:12.5px; opacity:.92; margin:6px 0 10px; line-height:1.5}
+  .upd-actions{display:flex; gap:10px}
+  .upd-b{flex:1; border:none; background:#fff; color:#3E6FD8; font-weight:700; padding:9px; border-radius:10px; cursor:pointer; font-size:14px}
+  .upd-x{background:rgba(255,255,255,.18); color:#fff; border:none; padding:9px 14px; border-radius:10px; cursor:pointer; font-size:14px}
 </style>
 </head>
 <body>
@@ -1378,6 +1393,7 @@ function saveUserName(){
 }
 function save_local(){ localStorage.setItem(KEY, JSON.stringify(state)) }
 
+const APP_VERSION = "2.3.0";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
 let state = mergeState(load());
 /* _v: 版本号；旧数据无 _v 视为种子数据，自动迁移为空初始态 */
 function defaultState(){ return {
@@ -2487,6 +2503,15 @@ const VIEWS = {
         <div class="set-t">☁️ 同步与备份</div>
         ${syncBlockHtml()}
       </div>
+
+      <div class="set-sec">
+        <div class="set-t">📦 软件更新</div>
+        <div class="set-hint">当前版本 v${APP_VERSION}。检测到新版本会在底部弹出更新提示，也可手动点按钮立即检查。</div>
+        <div class="add" style="margin:0">
+          <button class="btn sm" onclick="manualCheckUpdate()">🔄 检查更新</button>
+          <span id="upd-status" style="font-size:13px;color:var(--muted)"></span>
+        </div>
+      </div>
       ${paySettingsHtml()}
     </div>`;
   },
@@ -3095,6 +3120,38 @@ async function pullCloud(manual){
   if(manual) renderAccount();
 }
 
+/* ================= 在线更新检测 ================= */
+function cmpVer(a,b){ const x=String(a).split('.').map(Number), y=String(b).split('.').map(Number); for(let i=0;i<3;i++){ const d=(x[i]||0)-(y[i]||0); if(d) return d; } return 0; }
+async function checkForUpdate(){
+  try{
+    const r = await fetch('version.json', {cache:'no-store'});
+    if(!r.ok) return false;
+    const j = await r.json();
+    if(j && j.version && cmpVer(j.version, APP_VERSION) > 0){
+      const bar = document.getElementById('upd');
+      document.getElementById('upd-v').textContent = 'v'+j.version;
+      document.getElementById('upd-n').textContent = j.notes || '';
+      if(bar) bar.hidden = false;
+      return true;
+    }
+  }catch(e){ /* 离线或读不到版本文件都忽略 */ }
+  return false;
+}
+function hideUpdate(){ const b=document.getElementById('upd'); if(b) b.hidden=true; }
+async function manualCheckUpdate(){
+  const s=document.getElementById('upd-status');
+  if(s){ s.textContent='检查中…'; s.style.color='var(--muted)'; }
+  const found = await checkForUpdate();
+  if(s){ s.textContent = found ? '' : '已是最新版本 (v'+APP_VERSION+')'; s.style.color = found ? 'var(--muted)' : 'var(--green-d)'; }
+}
+function doUpdate(){
+  hideUpdate();
+  if(navigator.serviceWorker){
+    try{ navigator.serviceWorker.getRegistration().then(reg=>{ if(reg) reg.update(); }).catch(()=>{}); }catch(e){}
+  }
+  setTimeout(()=>location.reload(true), 120);
+}
+
 /* ---------------- 启动 ---------------- */
 (function init(){
   famousIdx = Math.floor(Math.random()*FAMOUS.length);
@@ -3110,6 +3167,9 @@ async function pullCloud(manual){
   const savedFont = loadFont(); if(savedFont){ const f=FONTS.find(x=>x.key===savedFont); if(f) applyFont(f.stack); }
   buildNav(); syncHabitTasks(); syncFitTasks(); songRecs = pickSongRecs(4); render(); renderAccount(); initSb(); pollPendingPay();
   if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
+  checkForUpdate();                                   // 启动即检测一次新版本
+  setInterval(checkForUpdate, 5*60*1000);            // 之后每 5 分钟静默检测
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) checkForUpdate(); });
   // 每 60 秒检测跨天：次日自动清掉旧习惯/运动任务、刷新今日清单
   setInterval(()=>{ const t=dayKey(); if(state.habitTaskDate!==t){ syncHabitTasks(); syncFitTasks(); if(current==="tasks"||current==="home") render(); } }, 60000);
 
@@ -3315,5 +3375,15 @@ async function pullCloud(manual){
   };
 })();
 </script>
+<div id="upd" class="upd" hidden>
+  <div class="upd-card">
+    <div class="upd-h">🆕 发现新版本 <b id="upd-v"></b></div>
+    <div class="upd-n" id="upd-n"></div>
+    <div class="upd-actions">
+      <button class="upd-b" onclick="doUpdate()">立即更新</button>
+      <button class="upd-x" onclick="hideUpdate()">稍后</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

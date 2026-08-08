@@ -1,6 +1,6 @@
 {
   "appId": "com.qingchen.workbench",
-  "appName": "清晨工作台",
+  "appName": "仔仔管家",
   "webDir": "www",
   "server": {
     "androidScheme": "https"
