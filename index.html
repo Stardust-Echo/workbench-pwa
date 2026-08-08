@@ -1397,11 +1397,12 @@ function saveUserName(){
 }
 function save_local(){ localStorage.setItem(KEY, JSON.stringify(state)) }
 
-const APP_VERSION = "2.4.1";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
+const APP_VERSION = "2.4.2";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
 let state = mergeState(load());
 /* _v: 版本号；旧数据无 _v 视为种子数据，自动迁移为空初始态 */
 function defaultState(){ return {
   _v: 2,
+  _lastMood: null,
   tasks:[],
   habit:[],
   habitTaskDate:null,
@@ -1955,6 +1956,7 @@ const VIEWS = {
       <div class="moods">
         ${opts.map(o=>`<div class="mood ${(sel&&sel.emoji===o[0])||(last&&last.emoji===o[0])?'on':''}" onclick="logMood('${o[0]}','${o[1]}')">${o[0]}</div>`).join("")}
       </div>
+      ${sel?`<div style="margin:6px 2px 4px;font-size:13px;color:var(--muted);line-height:1.4">当前已选：<span style="font-size:20px;vertical-align:middle">${sel.emoji}</span> <b style="color:var(--gold-d);font-size:14px">${sel.label}</b><span style="margin-left:6px;color:var(--gold-d);font-size:12px">✓ 点其他表情可重新选择</span></div>`:''}
       <div class="add"><input id="m-note" placeholder="今天发生了什么？（可选）"/><button class="btn" onclick="saveMoodNote()">记一笔</button></div>
       <div class="img-bar">
         <label class="img-btn">📷 图片<input type="file" accept="image/*" hidden onchange="onMoodImg(this)"/></label>
