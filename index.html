@@ -42,10 +42,11 @@
     color:var(--muted); cursor:pointer; font-size:14px; font-weight:500; user-select:none;
     transition:background .15s,color .15s;
   }
-  .nav-item .ic{font-size:16px;width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:0 0 auto;box-shadow:0 2px 5px rgba(120,95,60,.12)}
+  .nav-item .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:0 0 auto;box-shadow:0 2px 5px rgba(120,95,60,.12);font-size:17px;line-height:1}
+  .nav-item.active .ic{background:color-mix(in srgb, var(--green) 24%, transparent)!important;box-shadow:0 2px 6px rgba(143,191,111,.28)}
   .nav-item:hover{background:rgba(143,191,111,.12)}
-  .nav-item.active{background:var(--ink); color:#fff}
-  .nav-item.active:hover{background:var(--ink)}
+  .nav-item.active{background:rgba(143,191,111,.16); color:var(--green-d); font-weight:600}
+  .nav-item.active:hover{background:rgba(143,191,111,.22)}
 
   /* ---------- 主区 ---------- */
   .main{flex:1; display:flex; flex-direction:column; min-width:0}
@@ -58,6 +59,8 @@
   .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
     box-shadow:var(--shadow); padding:18px 20px; margin-bottom:16px}
   .card h2{margin:0 0 14px; font-size:16px; display:flex; align-items:center; gap:8px}
+  .card h2 .h2-em{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9px;
+    background:color-mix(in srgb, var(--m-color,#8FBF6F) 20%, transparent);font-size:15px;line-height:1;flex:0 0 auto}
   .card h2 .tag{font-size:12px;color:var(--muted);font-weight:400;margin-left:auto}
   .grid{display:grid; gap:14px}
   .g2{grid-template-columns:repeat(2,1fr)}
@@ -103,11 +106,15 @@
   .goal-in:focus{outline:none;border-color:var(--green)}
 
   /* 便签图标选择 */
-  .ic-pick{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
-  .ic-chip{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:#FBF7EF;
-    font-size:17px;display:grid;place-items:center;cursor:pointer;transition:.12s;font-family:inherit;padding:0;line-height:1}
+  .ic-pick{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 10px}
+  .ic-chip{position:relative;width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:#FBF7EF;
+    font-size:18px;display:grid;place-items:center;cursor:pointer;transition:.12s;font-family:inherit;padding:0;line-height:1}
   .ic-chip:hover{background:#FFF6E4;border-color:var(--gold)}
-  .ic-chip.on{background:#FFF6E4;border-color:var(--gold);box-shadow:0 0 0 2px rgba(231,198,75,.35)}
+  .ic-chip.on{background:color-mix(in srgb, var(--green) 14%, #FFF);border-color:var(--green);
+    box-shadow:0 0 0 2px color-mix(in srgb, var(--green) 40%, transparent);transform:translate(0,-1px)}
+  .ic-chip.on::after{content:"✓";position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;
+    background:var(--green);color:#fff;font-size:10px;line-height:16px;text-align:center;font-weight:700;
+    box-shadow:0 2px 4px rgba(143,191,111,.4)}
 
   /* 日记卡片（心情/便签/树洞） */
   .diary{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card);margin-top:12px;position:relative}
@@ -144,7 +151,7 @@
   .mood{width:52px;height:52px;border-radius:14px;background:#FBF7EF;border:1px solid var(--line);
     font-size:26px;display:grid;place-items:center;cursor:pointer;transition:.15s}
   .mood:hover{border-color:var(--gold);background:#FFF6E4}
-  .mood.on{border-color:var(--gold);background:#FFF6E4;box-shadow:0 0 0 3px rgba(217,164,65,.35);transform:scale(1.08)}
+  .mood.on{border-color:var(--green);background:color-mix(in srgb, var(--green) 14%, #FFF);box-shadow:0 0 0 3px color-mix(in srgb, var(--green) 40%, transparent);transform:scale(1.08)}
   .divider{margin:20px auto;width:64%;height:1px;background:var(--line);position:relative;border-radius:1px}
 
   .notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
@@ -225,7 +232,7 @@
       user-select:none; -webkit-user-select:none; touch-action:manipulation;
       transition:transform .18s, opacity .18s;
     }
-    .tab .ic{font-size:18px;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:0 0 auto;box-shadow:0 2px 6px rgba(120,95,60,.12)}
+    .tab .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:0 0 auto;box-shadow:0 2px 6px rgba(120,95,60,.12);font-size:18px;line-height:1}
     .tab .more-ic{background:var(--bg);border-radius:11px;padding:7px;box-shadow:0 2px 6px rgba(120,95,60,.12)}
     .tab.on .ic,.tab.on .more-ic{box-shadow:0 0 0 2px var(--green)}
     .tab.on{color:var(--green-d); background:rgba(143,191,111,.14)}
@@ -806,21 +813,23 @@
 <div class="modal" id="funModal" onclick="if(event.target===this)closeFun()"></div>
 
 <script>
+/* 模块图标使用 emoji（与参考样图一致），MODULES 中通过 ic 字段指定 */
+
 const MODULES = [
   {id:"home",    name:"首页",     ic:"🏠", color:"#8FBF6F"},
-  {id:"tasks",   name:"任务清单", ic:"📝", color:"#7FB3A3"},
-  {id:"habit",   name:"习惯打卡", ic:"✅", color:"#E7B65A"},
-  {id:"mood",    name:"心情记录", ic:"🌈", color:"#F4A6A6"},
-  {id:"idea",    name:"奇思妙想", ic:"💭", color:"#E7C24B"},
+  {id:"tasks",   name:"任务清单", ic:"📋", color:"#7FB3A3"},
+  {id:"habit",   name:"习惯打卡", ic:"📅", color:"#E7B65A"},
+  {id:"mood",    name:"心情记录", ic:"💗", color:"#F4A6A6"},
+  {id:"idea",    name:"奇思妙想", ic:"💡", color:"#E7C24B"},
   {id:"read",    name:"音乐推荐", ic:"🎵", color:"#8FB6DD"},
   {id:"fit",     name:"健康管理", ic:"💪", color:"#C9A0DC"},
   {id:"study",   name:"学习管理", ic:"🎓", color:"#7FB3A3"},
   {id:"project", name:"项目管理", ic:"📁", color:"#E0936B"},
   {id:"money",   name:"记账理财", ic:"💰", color:"#D9A441"},
-  {id:"notes",   name:"便签",     ic:"🗒️", color:"#9FC2E8"},
-  {id:"whisper", name:"树洞",     ic:"🌳", color:"#A8C686"},
+  {id:"notes",   name:"便签",     ic:"📝", color:"#9FC2E8"},
+  {id:"whisper", name:"树洞",     ic:"🌿", color:"#A8C686"},
   {id:"settings",name:"设置",     ic:"⚙️", color:"#B6AEA3"},
-  {id:"log",     name:"我的日志", ic:"📅", color:"#9FC2E8"},
+  {id:"log",     name:"我的日志", ic:"📔", color:"#9FC2E8"},
 ];
 
 /* 模块分类（用于「更多」按类别分组，解决高低频混放 / 层级不清） */
@@ -1399,7 +1408,7 @@ function saveUserName(){
 }
 function save_local(){ localStorage.setItem(KEY, JSON.stringify(state)) }
 
-const APP_VERSION = "2.4.4";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
+const APP_VERSION = "2.4.13";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
 let state = mergeState(load());
 /* _v: 版本号；旧数据无 _v 视为种子数据，自动迁移为空初始态 */
 function defaultState(){ return {
@@ -1462,12 +1471,12 @@ const PRIMARY = ["home","tasks","habit","mood","money"];
 
 function buildNav(){
   $("#nav").innerHTML = MODULES.map(m=>
-    `<div class="nav-item ${m.id===current?'active':''}" data-m="${m.id}"><span class="ic" style="background:${m.color}">${m.ic}</span>${m.name}</div>`).join("");
+    `<div class="nav-item ${m.id===current?'active':''}" data-m="${m.id}"><span class="ic" style="background:color-mix(in srgb, ${m.color} 18%, transparent)">${m.ic}</span>${m.name}</div>`).join("");
   const order = (state.tabOrder && state.tabOrder.length) ? state.tabOrder : PRIMARY;
   const orderSet = new Set(order);
   const moreOn = !orderSet.has(current);
   $("#tabbar").innerHTML =
-    order.map(id=>{ const m=MODULES.find(x=>x.id===id); return m?`<div class="tab ${id===current?'on':''}" data-m="${id}"><span class="tab-drag-hint">拖动排序</span><span class="ic" style="background:${m.color}">${m.ic}</span>${m.name}</div>`:""; }).join("")
+    order.map(id=>{ const m=MODULES.find(x=>x.id===id); return m?`<div class="tab ${id===current?'on':''}" data-m="${id}"><span class="tab-drag-hint">拖动排序</span><span class="ic" style="background:color-mix(in srgb, ${m.color} 18%, transparent)">${m.ic}</span>${m.name}</div>`:""; }).join("")
     + `<div class="tab ${moreOn?'on':''}" data-m="__more"><span class="more-ic"><i></i><i></i><i></i><i></i></span>更多</div>`;
   document.querySelectorAll(".nav-item").forEach(el=>el.onclick=()=>{current=el.dataset.m;buildNav();render();});
   setupTabDrag();
@@ -1651,9 +1660,28 @@ function saveTabEdit(){
 function render(){
   const m = MODULES.find(x=>x.id===current);
   $("#title").textContent = m.name;
-  $("#view").innerHTML = VIEWS[current]();
+  const viewEl=$("#view");
+  viewEl.style.setProperty("--m-color", m.color);
+  viewEl.innerHTML = VIEWS[current]();
+  enhanceH2();
   bind();
   if(current==="home"){ tickHomeClock(); }
+}
+/* 把卡片 h2 行首的 emoji 包进柔和彩色小方块芯片 */
+function enhanceH2(){
+  document.querySelectorAll("#view .card h2").forEach(h=>{
+    if(h.dataset.em) return;
+    h.dataset.em="1";
+    const first=h.firstChild;
+    if(!first || first.nodeType!==3) return;
+    const txt=first.textContent;
+    const mm=txt.match(/^(\s*)(\p{Extended_Pictographic}[\uFE0F\u200D\p{Extended_Pictographic}]*)(\s*)/u);
+    if(!mm || !mm[2]) return;
+    const span=document.createElement("span");
+    span.className="h2-em"; span.textContent=mm[2];
+    first.textContent=txt.slice(mm[0].length);
+    h.insertBefore(span, first);
+  });
 }
 
 /* ---------------- 综合首页（v15） ---------------- */
