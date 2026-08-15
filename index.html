@@ -1010,7 +1010,7 @@ function setBtn(c){ document.documentElement.style.setProperty("--btn", c); docu
 
 // 便签可选图标
 const NOTE_ICONS = ["🗒️","📝","✏️","📌","📎","💡","⭐","⚡","🔥","🎯","💰","📚","🎓","🚀","🌟","💪","❤️","🌈","☕","🍎","🏠","🛒","⚠️","✅","🔔","🎉","🌿","💻","📅","🧠"];
-let noteSelIc = "🗒️";
+let noteSelIc = null;
 
 // 首页每日金句（按日期取一句，刷新页面也固定到当天）
 const QUOTES = [
@@ -1939,9 +1939,19 @@ const VIEWS = {
     const hints=[];
     if(hn) hints.push(`🔁 ${hn} 条每日习惯`);
     if(fn) hints.push(`🏃 ${fn} 条今日运动`);
+    const tpls=loadTpl();
+    const taskCollapsed = localStorage.getItem('WB_TASK_COLLAPSED')==='1';
+    const tplCollapsed = localStorage.getItem('WB_TPL_COLLAPSED')==='1';
     return `
+    <style id="tpl-style">.tpl-wrap{max-width:940px;margin:0 auto;padding:18px 22px 40px}.tpl-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}.tpl-hint{color:var(--muted);font-size:13px;margin:6px 2px 12px}.tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;align-items:stretch}.tpl-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;height:360px}.tpl-head{display:flex;align-items:center;gap:8px}.tpl-ic{font-size:20px}.tpl-name{flex:1;font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tpl-prog{color:var(--muted);font-size:13px}.tpl-del{cursor:pointer;color:var(--muted);font-size:14px;opacity:.7}.tpl-del:hover{opacity:1}.tpl-bar2{height:6px;background:color-mix(in srgb,var(--line) 55%,#a9a294);border-radius:99px;margin:10px 0;overflow:hidden}.tpl-bar2 i{display:block;height:100%;background:var(--green);border-radius:99px}.tpl-items{display:flex;flex-direction:column;gap:6px;flex:1;min-height:90px;overflow-y:auto}.tpl-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--bg) 60%,#fff);cursor:pointer}.tpl-item.on .tpl-txt{text-decoration:line-through;color:var(--muted)}.tpl-ck{width:20px;height:20px;border-radius:6px;border:2px solid var(--green);display:grid;place-items:center;color:#fff;font-size:13px;flex:0 0 auto}.tpl-item.on .tpl-ck{background:var(--green)}.tpl-txt{flex:1;font-size:14px}.tpl-x{color:var(--muted);cursor:pointer;font-size:16px;padding:0 4px}.tpl-empty{color:var(--muted);font-size:13px;padding:6px 2px}.tpl-foot{margin-top:auto;padding-top:12px;display:flex;flex-direction:column;gap:8px;border-top:1px dashed var(--line)}.tpl-add{display:flex;gap:6px}.tpl-add input{flex:1;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg);color:var(--ink);outline:none}.tpl-apply{width:100%}.tpl-headbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0}.tpl-headbar .tpl-title{display:flex;align-items:center;gap:8px}.tpl-headbar .tpl-meta{display:flex;align-items:center;gap:10px}.tpl-caret{font-size:13px;color:var(--muted);margin-left:2px}.tpl-collapsed-hint{color:var(--muted);font-size:13px;padding:10px 12px;margin-top:8px;background:color-mix(in srgb,var(--bg) 72%,#fff);border-radius:10px;line-height:1.5}</style>
     <div class="card">
-      <h2>📝 任务清单 <span class="tag">${dayLabel}</span><span class="tag">${done}/${total} 已完成</span></h2>
+      <div class="tpl-headbar" style="cursor:pointer" onclick="toggleTasks()">
+        <div class="tpl-title">
+          <h2 style="margin:0">📝 任务清单 <span class="tag">${dayLabel}</span><span class="tag">${done}/${total} 已完成</span></h2>
+          <span class="tpl-caret">${taskCollapsed?'▸':'▾'}</span>
+        </div>
+      </div>
+      <div class="tasks-body"${taskCollapsed?' style="display:none"':''}>
       ${total?`<div class="progress"><i style="width:${pct}%"></i></div>`:""}
       ${hints.length?`<div class="hint">${hints.join(" · ")} · 次日自动刷新</div>`:""}
       <div class="add">
@@ -1954,6 +1964,52 @@ const VIEWS = {
           <div class="txt">${esc(t.text)}${t.habit?'<span class="habit-badge">🔁 习惯</span>':''}${t.fit?'<span class="fit-badge">💪 运动</span>':''}</div>
           <div class="del" onclick="delTask(${t.id})">删除</div>
         </div>`).join(""):'<div class="empty">还没有任务，加一条吧～</div>'}
+      </div>
+    </div>
+    <div class="card">
+      <div class="tpl-headbar">
+        <div class="tpl-title" onclick="toggleTpl()" style="cursor:pointer">
+          <h2 style="margin:0">📋 复用清单 <span class="tpl-caret">${tplCollapsed?'▸':'▾'}</span></h2>
+          <span class="tag">${tpls.length} 套模板</span>
+        </div>
+        <div class="tpl-meta">
+          <button class="btn sm" onclick="tplNew()">＋ 新建清单</button>
+        </div>
+      </div>
+      <div class="tpl-body"${tplCollapsed?' style="display:none"':''}>
+      <div class="tpl-hint">把常买 / 常带的东西存成模板，点「套用为任务」一键生成到上方任务清单（借鉴 TREK 的 Packing List）</div>
+      <div class="tpl-grid">
+        ${tpls.map(t=>{
+          const tt=t.items.length, td=t.items.filter(i=>i.done).length, tp=tt?Math.round(td/tt*100):0;
+          return `
+        <div class="tpl-card">
+          <div class="tpl-head">
+            <span class="tpl-ic">${t.icon||"📋"}</span>
+            <span class="tpl-name">${tplEsc(t.name)}</span>
+            <span class="tpl-prog">${td}/${tt}</span>
+            <span class="tpl-del" onclick="tplDel('${t.id}')" title="删除清单">🗑</span>
+          </div>
+          <div class="tpl-bar2"><i style="width:${tp}%"></i></div>
+          <div class="tpl-items">
+            ${t.items.map(i=>`
+              <div class="tpl-item ${i.done?'on':''}" onclick="tplToggle('${t.id}','${i.id}')">
+                <span class="tpl-ck">${i.done?'✓':''}</span>
+                <span class="tpl-txt">${tplEsc(i.text)}</span>
+                <span class="tpl-x" onclick="event.stopPropagation();tplDelItem('${t.id}','${i.id}')">×</span>
+              </div>`).join("") || '<div class="tpl-empty">还没有条目，下面添加～</div>'}
+          </div>
+          <div class="tpl-foot">
+            <div class="tpl-add">
+              <input id="tpl-in-${t.id}" placeholder="添加条目后回车" onkeydown="if(event.key==='Enter')tplAddItem('${t.id}')"/>
+              <button class="btn sm ghost" onclick="tplAddItem('${t.id}')">添加</button>
+              <button class="btn sm ghost" style="opacity:.7" onclick="tplRename('${t.id}')">改名</button>
+            </div>
+            <button class="btn ghost tpl-apply" onclick="tplToTasks('${t.id}')">➕ 套用为任务</button>
+          </div>
+        </div>`;
+        }).join("")}
+      </div>
+      </div>
     </div>`;
   },
 
@@ -3059,9 +3115,40 @@ function addProj(){const name=$("#p-name").value.trim();if(!name)return;
   state.project.push({name,note:($("#p-note").value||"").trim(),status:"进行中"});save();render();
   const a=$("#p-name"); if(a) a.value=""; const b=$("#p-note"); if(b) b.value="";}
 function delProj(i){ if(i<0||i>=state.project.length) return; state.project.splice(i,1); save(); render(); }
+/* ===== 复用清单（模板库）已合并进「任务清单」视图 ===== */
+const TPL_KEY = "WB_TPL";
+function tplEsc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function loadTpl(){
+  try{ const r=localStorage.getItem(TPL_KEY); if(r) return JSON.parse(r); }catch(e){}
+  const seed=[
+    {id:uid(), name:"出行打包", icon:"🧳", items:[{id:uid(),text:"证件 / 钱包",done:false},{id:uid(),text:"充电宝",done:false},{id:uid(),text:"耳机",done:false},{id:uid(),text:"换洗衣物",done:false},{id:uid(),text:"洗漱包",done:false},{id:uid(),text:"常用药",done:false}]},
+    {id:uid(), name:"购物清单", icon:"🛒", items:[{id:uid(),text:"蔬菜",done:false},{id:uid(),text:"水果",done:false},{id:uid(),text:"牛奶",done:false},{id:uid(),text:"鸡蛋",done:false},{id:uid(),text:"日用品",done:false}]},
+    {id:uid(), name:"搬家清单", icon:"📦", items:[{id:uid(),text:"纸箱",done:false},{id:uid(),text:"封箱带",done:false},{id:uid(),text:"马克笔",done:false},{id:uid(),text:"气泡膜",done:false},{id:uid(),text:"贵重物品随身",done:false}]},
+    {id:uid(), name:"日常采购", icon:"🧺", items:[{id:uid(),text:"米",done:false},{id:uid(),text:"油",done:false},{id:uid(),text:"盐",done:false},{id:uid(),text:"纸巾",done:false}]}
+  ];
+  localStorage.setItem(TPL_KEY, JSON.stringify(seed));
+  return seed;
+}
+function saveTpl(a){ localStorage.setItem(TPL_KEY, JSON.stringify(a)); }
+function tplMutate(id, fn){ const a=loadTpl(); const t=a.find(x=>String(x.id)===String(id)); if(t){ fn(t); saveTpl(a); } render(); }
+function tplNew(){ const n=prompt("新清单名称：","我的清单"); if(n==null) return; const a=loadTpl(); a.push({id:uid(), name:(n.trim()||"我的清单"), icon:"📋", items:[]}); saveTpl(a); render(); }
+function tplDel(id){ if(!confirm("确定删除该清单？")) return; saveTpl(loadTpl().filter(x=>String(x.id)!==String(id))); render(); }
+function tplRename(id){ const a=loadTpl(); const t=a.find(x=>String(x.id)===String(id)); if(!t) return; const n=prompt("重命名：", t.name); if(n==null) return; t.name=(n.trim()||t.name); saveTpl(a); render(); }
+function tplAddItem(id){ const el=document.getElementById("tpl-in-"+id); if(!el) return; const v=el.value.trim(); if(!v) return; tplMutate(id, x=>x.items.push({id:uid(), text:v, done:false})); }
+function tplToggle(id, iid){ tplMutate(id, x=>{ const it=x.items.find(i=>String(i.id)===String(iid)); if(it) it.done=!it.done; }); }
+function tplDelItem(id, iid){ tplMutate(id, x=>{ x.items=x.items.filter(i=>String(i.id)!==String(iid)); }); }
+function tplToTasks(id){
+  const t=loadTpl().find(x=>String(x.id)===String(id)); if(!t) return;
+  let n=0;
+  t.items.forEach(i=>{ const v=(i.text||"").trim(); if(v){ state.tasks.push({id:uid(),text:v,done:false,tpl:String(id)}); n++; } });
+  if(n){ save(); render(); }
+}
+function toggleTasks(){ const c=localStorage.getItem('WB_TASK_COLLAPSED')==='1'; localStorage.setItem('WB_TASK_COLLAPSED', c?'0':'1'); render(); }
+function toggleTpl(){ const c=localStorage.getItem('WB_TPL_COLLAPSED')==='1'; localStorage.setItem('WB_TPL_COLLAPSED', c?'0':'1'); render(); }
+
 function addNote(){const v=$("#n-in").value.trim();if(!v&&!noteImg)return;
   const cs=["#FFF2B8","#D6E8C8","#FBD3D3","#D3E4FB","#EAD9F2","#FCE4C8"];
-  state.notes.push({id:uid(),color:cs[Math.floor(Math.random()*cs.length)],ic:noteSelIc,text:v,img:noteImg,ts:Date.now()});noteImg=null;save();render();
+  state.notes.push({id:uid(),color:cs[Math.floor(Math.random()*cs.length)],ic:noteSelIc||"🗒️",text:v,img:noteImg,ts:Date.now()});noteImg=null;noteSelIc=null;save();render();
   const i=$("#n-in"); if(i) i.value="";}
 function pickIc(ic){ noteSelIc=ic; document.querySelectorAll('#icPick .ic-chip').forEach(c=>c.classList.toggle('on', c.textContent===ic)); }
 function delNote(id){state.notes=state.notes.filter(x=>x.id!==id);save();render()}
