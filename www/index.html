@@ -305,6 +305,23 @@
   .sheet-check{margin-left:auto; color:var(--green); font-weight:700; font-size:17px}
   .sheet-row.active{background:rgba(143,191,111,.13)}
   .sheet-row.active .sheet-name{color:var(--green-d); font-weight:600}
+  /* 动作库（健身数据集 exercises-dataset） */
+  .btn.lib{background:var(--pink);color:#7a3b4a}
+  .btn.lib:hover{background:#eea3b2}
+  .exlib-kw{width:calc(100% - 32px);margin:8px 16px 0;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;background:var(--card);color:var(--ink)}
+  .exlib-chips{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line)}
+  .exlib-chips span{flex:none;font-size:12px;padding:5px 12px;border-radius:20px;background:#fff;border:1px solid var(--line);color:var(--muted);cursor:pointer;white-space:nowrap}
+  .exlib-chips span.on{background:var(--green);color:#fff;border-color:var(--green)}
+  .exlib-cnt{font-size:12px;color:var(--muted);padding:8px 16px;background:#fff7ec;border-bottom:1px solid var(--line)}
+  .exlib-list{overflow-y:auto;padding:12px 16px 18px}
+  .exlib-row{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+  .exlib-row .body{flex:1;min-width:0}
+  .exlib-row .nm{font-weight:700;font-size:14px}
+  .exlib-row .bd{margin:4px 0}
+  .exlib-row .bd i{font-style:normal;font-size:11px;background:#f3faf0;color:var(--green-d);border:1px solid #d8eccb;padding:1px 7px;border-radius:8px;margin-right:5px}
+  .exlib-row .st{font-size:12px;color:var(--muted);margin:4px 0;padding-left:18px}
+  .exlib-row .st li{margin:1px 0}
+  .exlib-hint{font-size:11px;color:var(--muted);padding:10px 16px;background:var(--card);text-align:center}
   .sheet-row.divider{border-top:1px solid var(--line); margin-top:6px; padding-top:14px}
   .more-ic{display:grid; grid-template-columns:repeat(2,4px); grid-template-rows:repeat(2,4px); gap:3px; width:20px; height:20px}
   .more-ic i{background:currentColor; border-radius:1.5px}
@@ -807,6 +824,17 @@
     <div class="tab-edit-hint">点行切换"显示/隐藏"，▲▼ 调整顺序</div>
     <div id="editList"></div>
     <button class="tab-edit-save" onclick="saveTabEdit()">完成</button>
+  </div>
+</div>
+<div class="sheet-mask" id="exLibMask" onclick="if(event.target===this)closeExLib()">
+  <div class="sheet">
+    <div class="sheet-grab"></div>
+    <div class="sheet-title">📚 动作库 · exercises-dataset 全 1324 条（全中文）</div>
+    <input class="exlib-kw" id="ex-kw" placeholder="搜索：动作名 / 部位 / 器材 / 目标肌群 / 教程" oninput="renderExLib()"/>
+    <div class="exlib-chips" id="exChips"></div>
+    <div class="exlib-cnt" id="exCnt"></div>
+    <div class="exlib-list" id="exList"></div>
+    <div class="exlib-hint">动作数据 © Gym visual · 数据集 MIT · 中文教程来自 exercises-dataset</div>
   </div>
 </div>
 <div class="modal" id="accountModal" onclick="if(event.target===this)toggleModal()"></div>
@@ -1408,7 +1436,7 @@ function saveUserName(){
 }
 function save_local(){ localStorage.setItem(KEY, JSON.stringify(state)) }
 
-const APP_VERSION = "2.4.14";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
+const APP_VERSION = "2.4.15";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
 const APP_COMMIT  = "233a90a";   // 当前构建对应 git commit 短 SHA（GitHub Actions 检测用）
 const APP_BUILD   = 24;           // 当前构建对应 GitHub Actions run_number
 let state = mergeState(load());
@@ -2229,6 +2257,9 @@ const VIEWS = {
         <button class="btn" onclick="addFit()">${edit?'更新':'添加'}</button>
         ${edit?'<button class="btn ghost sm" onclick="cancelFitEdit()">取消</button>':''}
       </div>
+      <div class="add fit-add" style="margin-top:8px">
+        <button class="btn lib" onclick="openExLib()">📚 动作库（1324 个动作 · 点选带入记录）</button>
+      </div>
       ${state.fit.length?state.fit.slice().reverse().map((f,i)=>{
         const idx=state.fit.length-1-i;
         const on = (typeof fitEditIdx==="number" && fitEditIdx===idx);
@@ -2703,6 +2734,64 @@ function addFit(){
     state.fit.push({id:uid(),date, type, note, kcal});
   }
   fitEditIdx=-1; syncFitTasks(); render();
+}
+
+/* ---------- 动作库（健身数据集 exercises-dataset · 全中文 1324 条） ---------- */
+let EXLIB=[], exPart='全部', exParts=['全部'], exReady=false, exExpanded=new Set();
+function exLoad(){
+  if(exReady) return;
+  fetch('exercises.zh.all.json').then(r=>r.json()).then(d=>{
+    EXLIB=d;
+    exParts=['全部', ...Array.from(new Set(d.map(x=>x.part)))];
+    exReady=true; renderExChips(); renderExLib();
+  }).catch(e=>{
+    document.getElementById('exList').innerHTML='<div class="empty">动作库数据加载失败，请确认 exercises.zh.all.json 在同目录</div>';
+  });
+}
+function renderExChips(){
+  document.getElementById('exChips').innerHTML=exParts.map(p=>
+    `<span class="${p===exPart?'on':''}" onclick="exPart='${p}';renderExChips();renderExLib()">${p}</span>`).join('');
+}
+function renderExLib(){
+  const kw=(document.getElementById('ex-kw').value||'').trim();
+  let list=EXLIB.filter(e=>{
+    if(exPart!=='全部' && e.part!==exPart) return false;
+    if(!kw) return true;
+    const hay=(e.name+' '+e.part+' '+e.equip+' '+e.target+' '+(e.secondary||[]).join(' ')+' '+e.steps.join(' ')).toLowerCase();
+    return hay.includes(kw.toLowerCase());
+  });
+  document.getElementById('exCnt').textContent='匹配 '+list.length+' 个动作'+(list.length>120?'（仅显示前 120，请缩小筛选）':'');
+  const box=document.getElementById('exList');
+  if(!list.length){box.innerHTML='<div class="empty">没有匹配的动作</div>';return;}
+  box.innerHTML=list.slice(0,120).map(e=>{
+    const expanded=exExpanded.has(e.id);
+    const show=expanded?e.steps:e.steps.slice(0,3);
+    const more=e.steps.length>3;
+    const rest=Math.max(0,e.steps.length-3);
+    return `
+    <div class="exlib-row">
+      <div class="body">
+        <div class="nm">${esc(e.name)}</div>
+        <div class="bd"><i>${esc(e.part)}</i><i>${esc(e.equip)}</i><i>目标 ${esc(e.target)}</i></div>
+        <ol class="st">${show.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
+        ${more?`<button class="btn ghost sm" onclick="toggleExSteps('${e.id}')">${expanded?'▲ 收起':'▼ 展开剩余 '+rest+' 步'}</button>`:''}
+        <button class="btn sm" style="margin-left:6px" onclick="pickEx('${e.id}')">选入运动记录</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleExSteps(id){
+  if(exExpanded.has(id)) exExpanded.delete(id); else exExpanded.add(id);
+  renderExLib();
+}
+function openExLib(){ exLoad(); renderExChips(); renderExLib(); document.getElementById('exLibMask').classList.add('on'); }
+function closeExLib(){ document.getElementById('exLibMask').classList.remove('on'); }
+function pickEx(id){
+  const e=EXLIB.find(x=>x.id===id); if(!e) return;
+  const t=document.getElementById('f-type'); if(t) t.value=e.name;
+  const n=document.getElementById('f-note'); if(n) n.value=e.part+' · '+e.equip+' · 目标 '+e.target;
+  closeExLib();
+  const add=document.getElementById('f-type'); if(add) add.focus();
 }
 function addSong(){
   const title=($("#s-title").value||"").trim();
