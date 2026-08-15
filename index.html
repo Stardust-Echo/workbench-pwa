@@ -1409,8 +1409,8 @@ function saveUserName(){
 function save_local(){ localStorage.setItem(KEY, JSON.stringify(state)) }
 
 const APP_VERSION = "2.4.14";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
-const APP_COMMIT  = "f13c1de";   // 当前构建对应 git commit 短 SHA（GitHub Actions 检测用）
-const APP_BUILD   = 23;           // 当前构建对应 GitHub Actions run_number
+const APP_COMMIT  = "233a90a";   // 当前构建对应 git commit 短 SHA（GitHub Actions 检测用）
+const APP_BUILD   = 24;           // 当前构建对应 GitHub Actions run_number
 let state = mergeState(load());
 /* _v: 版本号；旧数据无 _v 视为种子数据，自动迁移为空初始态 */
 function defaultState(){ return {

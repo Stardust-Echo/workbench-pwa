@@ -1,7 +1,7 @@
 {
   "version": "2.4.14",
-  "commit": "f13c1de",
-  "run_number": 23,
+  "commit": "233a90a",
+  "run_number": 24,
   "run_url": "https://github.com/Stardust-Echo/workbench-pwa/actions",
   "apk_url": "https://github.com/Stardust-Echo/workbench-pwa/actions",
   "notes": "任务清单合并复用清单模板库；任务清单与复用清单均支持折叠/展开；便签图标记录后取消高亮；修复 GitHub Actions CI 同步根目录 index.html；新增 GitHub Actions 自动更新检测。",
