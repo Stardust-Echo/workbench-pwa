@@ -1,5 +1,9 @@
 {
-  "version": "2.4.13",
-  "notes": "对齐参考样图：① 侧栏选中态改为淡绿胶囊背景 + 绿色图标（撤销深墨底白字）；② 卡片 h2 行首 emoji 包进柔和彩色小方块芯片（按模块主题色着色）；③ 便签 emoji 调色板选中态改为绿色描边 + 绿色 ✓ 角标；④ 心情页面选中态改为绿色光环；⑤ 「我的日志」/设置等彩色图标卡片行沿用既有样式。",
-  "date": "2026-08-08"
+  "version": "2.4.14",
+  "commit": "f13c1de",
+  "run_number": 23,
+  "run_url": "https://github.com/Stardust-Echo/workbench-pwa/actions",
+  "apk_url": "https://github.com/Stardust-Echo/workbench-pwa/actions",
+  "notes": "任务清单合并复用清单模板库；任务清单与复用清单均支持折叠/展开；便签图标记录后取消高亮；修复 GitHub Actions CI 同步根目录 index.html；新增 GitHub Actions 自动更新检测。",
+  "date": "2026-08-15"
 }

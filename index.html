@@ -1408,7 +1408,9 @@ function saveUserName(){
 }
 function save_local(){ localStorage.setItem(KEY, JSON.stringify(state)) }
 
-const APP_VERSION = "2.4.13";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
+const APP_VERSION = "2.4.14";   // 软件版本号：每次发布新版 +1，并同步更新根目录 version.json
+const APP_COMMIT  = "f13c1de";   // 当前构建对应 git commit 短 SHA（GitHub Actions 检测用）
+const APP_BUILD   = 23;           // 当前构建对应 GitHub Actions run_number
 let state = mergeState(load());
 /* _v: 版本号；旧数据无 _v 视为种子数据，自动迁移为空初始态 */
 function defaultState(){ return {
@@ -2601,7 +2603,7 @@ const VIEWS = {
 
       <div class="set-sec">
         <div class="set-t">📦 软件更新</div>
-        <div class="set-hint">当前版本 v${APP_VERSION}。检测到新版本会在底部弹出更新提示，也可手动点按钮立即检查。</div>
+        <div class="set-hint">当前版本 v${APP_VERSION} #${APP_BUILD} (${APP_COMMIT})。检测到新版本会在底部弹出更新提示，也可手动点按钮立即检查。</div>
         <div class="add" style="margin:0">
           <button class="btn sm" onclick="manualCheckUpdate()">🔄 检查更新</button>
           <span id="upd-status" style="font-size:13px;color:var(--muted)"></span>
@@ -3248,8 +3250,34 @@ async function pullCloud(manual){
 
 /* ================= 在线更新检测 ================= */
 function cmpVer(a,b){ const x=String(a).split('.').map(Number), y=String(b).split('.').map(Number); for(let i=0;i<3;i++){ const d=(x[i]||0)-(y[i]||0); if(d) return d; } return 0; }
-const APK_DOWNLOAD_URL = 'https://github.com/Stardust-Echo/workbench-pwa/actions/workflows/build-android.yml';
+const APK_DOWNLOAD_URL = 'https://github.com/Stardust-Echo/workbench-pwa/actions';
+let lastRemoteVersion = null;      // 最近一次检测到的远端版本信息（供 doUpdate 使用）
+
+// 从 GitHub Actions API 或 version.json 获取最新版本信息
 async function fetchRemoteVersion(){
+  // 1) 优先监控 GitHub Actions：每次 master 有新 run 就提示更新
+  try{
+    const api = 'https://api.github.com/repos/Stardust-Echo/workbench-pwa/actions/runs?branch=master&status=success&per_page=1';
+    const r = await fetch(api, {cache:'no-store'});
+    if(r.ok){
+      const data = await r.json();
+      const run = data.workflow_runs && data.workflow_runs[0];
+      if(run){
+        return {
+          version: null,
+          commit: run.head_sha,
+          run_number: run.run_number,
+          run_url: run.html_url,
+          apk_url: run.html_url,
+          notes: run.display_title || (run.head_commit && run.head_commit.message) || '',
+          date: run.created_at,
+          source: 'github-actions'
+        };
+      }
+    }
+  }catch(e){ /* 网络/CORS 限制时走下方兜底 */ }
+
+  // 2) 兜底：version.json（CDN / raw）
   const urls = [
     'https://cdn.jsdelivr.net/gh/Stardust-Echo/workbench-pwa@master/version.json',
     'https://raw.githubusercontent.com/Stardust-Echo/workbench-pwa/master/version.json'
@@ -3259,24 +3287,44 @@ async function fetchRemoteVersion(){
       const r = await fetch(u, {cache:'no-store'});
       if(!r.ok) continue;
       const j = await r.json();
-      if(j && j.version) return j;
+      if(j && j.version){ j.source='version-json'; return j; }
     }catch(e){ /* 试下一个源 */ }
   }
+
+  // 3) 本地兜底（浏览器/PWA 同源部署用；APK 里取到的是包内死路）
+  try{
+    const r = await fetch('version.json', {cache:'no-store'});
+    if(r.ok){ const j=await r.json(); if(j&&j.version){j.source='local'; return j;} }
+  }catch(e){}
+
   return null;
 }
+
+function shortSha(sha){ return sha ? sha.substring(0,7) : ''; }
+
+function isNewerVersion(j){
+  if(!j) return false;
+  // 优先用 GitHub Actions 的 commit 对比（最准，每次 push 都变）
+  if(j.commit && shortSha(j.commit) !== APP_COMMIT) return true;
+  // 其次用 run_number
+  if(j.run_number && j.run_number > APP_BUILD) return true;
+  // 最后回退到语义版本号
+  if(j.version && cmpVer(j.version, APP_VERSION) > 0) return true;
+  return false;
+}
+
 async function checkForUpdate(){
-  let j = await fetchRemoteVersion();
-  if(!j){
-    // 兜底：相对路径（浏览器/PWA 同源部署用；APK 里取到的是包内死路）
-    try{
-      const r = await fetch('version.json', {cache:'no-store'});
-      if(r.ok){ j = await r.json(); }
-    }catch(e){}
-  }
-  if(j && j.version && cmpVer(j.version, APP_VERSION) > 0){
+  const j = await fetchRemoteVersion();
+  lastRemoteVersion = j;
+  if(!j) return false;
+  if(isNewerVersion(j)){
     const bar = document.getElementById('upd');
-    document.getElementById('upd-v').textContent = 'v'+j.version;
-    document.getElementById('upd-n').textContent = j.notes || '';
+    const vEl = document.getElementById('upd-v');
+    const nEl = document.getElementById('upd-n');
+    const vText = (j.version ? 'v'+j.version : 'Build #'+j.run_number) +
+                  (j.commit ? ' ('+shortSha(j.commit)+')' : '');
+    if(vEl) vEl.textContent = vText;
+    if(nEl) nEl.textContent = j.notes || '';
     if(bar) bar.hidden = false;
     return true;
   }
@@ -3287,20 +3335,32 @@ async function manualCheckUpdate(){
   const s=document.getElementById('upd-status');
   if(s){ s.textContent='检查中…'; s.style.color='var(--muted)'; }
   const found = await checkForUpdate();
-  if(s){ s.textContent = found ? '' : '已是最新版本 (v'+APP_VERSION+')'; s.style.color = found ? 'var(--muted)' : 'var(--green-d)'; }
+  if(s){
+    if(found){
+      s.textContent = '发现新版本';
+      s.style.color = 'var(--green-d)';
+    } else if(lastRemoteVersion){
+      s.textContent = '已是最新版本 (v'+APP_VERSION+' #'+APP_BUILD+')';
+      s.style.color = 'var(--green-d)';
+    } else {
+      s.textContent = '检查失败，请检查网络';
+      s.style.color = 'var(--red)';
+    }
+  }
 }
 function doUpdate(){
   hideUpdate();
-  const isAPK = !!window.Capacitor || location.hostname === 'localhost';
+  const isAPK = !!window.Capacitor || /android|iphone|ipad|ipod/i.test(navigator.userAgent) || location.hostname === 'localhost';
+  const url = (lastRemoteVersion && (lastRemoteVersion.apk_url || lastRemoteVersion.run_url)) || APK_DOWNLOAD_URL;
   if(isAPK){
-    // APK 不能自更新：直接打开 GitHub Actions 页面让用户下载新 APK
-    try{ window.open(APK_DOWNLOAD_URL, '_blank'); }catch(e){}
+    // APK 不能自更新：直接打开 GitHub Actions 对应 run 页面让用户下载新 APK
+    try{ window.open(url, '_blank'); }catch(e){}
   } else {
-    // 浏览器/PWA：SW 更新并刷新
+    // 浏览器/PWA：尝试更新 SW，同时打开下载页
     if(navigator.serviceWorker){
       try{ navigator.serviceWorker.getRegistration().then(reg=>{ if(reg) reg.update(); }).catch(()=>{}); }catch(e){}
     }
-    setTimeout(()=>location.reload(true), 120);
+    setTimeout(()=>{ try{ window.open(url, '_blank'); }catch(e){} location.reload(true); }, 120);
   }
 }
 
