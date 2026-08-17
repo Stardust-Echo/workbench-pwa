@@ -1,10 +1,10 @@
 {
-  "version": "2.4.16",
-  "commit": "",
-  "run_number": 0,
+  "version": "2.4.17",
+  "commit": "765c1a6",
+  "run_number": 32,
   "run_url": "https://github.com/Stardust-Echo/workbench-pwa/actions",
   "apk_url": "https://github.com/Stardust-Echo/workbench-pwa/actions",
-  "url": "https://YOUR_DEPLOYED_EXPRESS_DOMAIN/updates/v2.4.16.zip",
-  "notes": "合并日常版全部模块：新增「任务截止日 + 应用内提醒（信息提醒）」「文件备份（不依赖云端，导出/导入备份文件）」，学习管理升级为「周计划视图 + 截止日」；保留应用内 OTA 热更新（不跳浏览器）。",
-  "date": "2026-08-15"
+  "url": "https://cdn.jsdelivr.net/gh/Stardust-Echo/workbench-pwa@merge-latest/updates/v2.4.17.zip",
+  "notes": "首次真正部署应用内 OTA 更新源（jsDelivr 托管，免自建服务器）：含日常版全部模块（信息提醒/文件备份/增强版学习管理）+ 应用内热更。已装 2.4.16 的 APK 将自动在应用内下载本 zip 并 reload，不跳浏览器。",
+  "date": "2026-08-17"
 }

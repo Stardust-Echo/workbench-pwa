@@ -3565,8 +3565,8 @@ function cmpVer(a,b){ const x=String(a).split('.').map(Number), y=String(b).spli
 const APK_DOWNLOAD_URL = 'https://github.com/Stardust-Echo/workbench-pwa/actions/workflows/build-android.yml';
 async function fetchRemoteVersion(){
   const urls = [
-    'https://cdn.jsdelivr.net/gh/Stardust-Echo/workbench-pwa@master/version.json',
-    'https://raw.githubusercontent.com/Stardust-Echo/workbench-pwa/master/version.json'
+    'https://cdn.jsdelivr.net/gh/Stardust-Echo/workbench-pwa@merge-latest/version.json',
+    'https://raw.githubusercontent.com/Stardust-Echo/workbench-pwa/merge-latest/version.json'
   ];
   for(const u of urls){
     try{
