@@ -4,6 +4,7 @@
   "run_number": 24,
   "run_url": "https://github.com/Stardust-Echo/workbench-pwa/actions",
   "apk_url": "https://github.com/Stardust-Echo/workbench-pwa/actions",
+  "url": "https://YOUR_DEPLOYED_EXPRESS_DOMAIN/updates/v2.4.15.zip",
   "notes": "新增「健康管理·运动记录」动作库：全量接入 exercises-dataset 1324 条动作（全中文，含部位/器材/目标肌群/分步教程），支持搜索、部位筛选、步骤折叠展开、选入运动记录。",
   "date": "2026-08-15"
 }

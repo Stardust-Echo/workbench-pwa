@@ -3405,6 +3405,7 @@ function isNewerVersion(j){
 async function checkForUpdate(){
   const j = await fetchRemoteVersion();
   lastRemoteVersion = j;
+  window.__UPDATE_URL = (j && j.url) || '';   // OTA zip 包地址（由 version.json 提供）
   if(!j) return false;
   if(isNewerVersion(j)){
     const bar = document.getElementById('upd');
@@ -3442,8 +3443,16 @@ function doUpdate(){
   const isAPK = !!window.Capacitor || /android|iphone|ipad|ipod/i.test(navigator.userAgent) || location.hostname === 'localhost';
   const url = (lastRemoteVersion && (lastRemoteVersion.apk_url || lastRemoteVersion.run_url)) || APK_DOWNLOAD_URL;
   if(isAPK){
-    // APK 不能自更新：直接打开 GitHub Actions 对应 run 页面让用户下载新 APK
-    try{ window.open(url, '_blank'); }catch(e){}
+    // APK：优先用 capacitor-updater 做应用内热更新（不跳浏览器）；失败再回退浏览器下载
+    const zipUrl = window.__UPDATE_URL;
+    const U = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorUpdater;
+    if(U && zipUrl){
+      U.download({ url: zipUrl }).then(b=>U.set({ id: b.id }))
+        .then(()=>{ location.reload(true); })
+        .catch(err=>{ console.warn('OTA 更新失败，转浏览器下载', err); try{ window.open(url, '_blank'); }catch(e){} });
+    } else {
+      try{ window.open(url, '_blank'); }catch(e){}
+    }
   } else {
     // 浏览器/PWA：尝试更新 SW，同时打开下载页
     if(navigator.serviceWorker){

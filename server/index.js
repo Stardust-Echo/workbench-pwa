@@ -18,6 +18,13 @@ app.use(cors({
 
 app.use(express.static(path.join(__dirname, '..', 'www')));
 
+// ---- 应用内 OTA 更新服务（方案 B：自建，复用 Express）----
+const updaterDir = path.join(__dirname, '..', 'updates');
+app.use('/updates', express.static(updaterDir));
+app.get('/api/version', (req, res) => {
+  try { res.json(require('../version.json')); } catch (e) { res.status(500).json({ ok: false }); }
+});
+
 // ---------- 安全中间件 ----------
 // HTML 属性转义（用于模拟收银台页面反射 out_trade_no 等）
 function escAttr(s) {
